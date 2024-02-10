@@ -1,14 +1,16 @@
 # RoboCivix
 
+<a href="https://robocivix.github.io/">
+	<img src="https://img.shields.io/badge/Web-RoboCivix-blue?"
+		alt="Robocivix home page"></a>
+
+<a href="https://www.reddit.com/r/RoboCivix/">
+	<img src="https://img.shields.io/badge/RoboCivix-blue?logo=reddit"
+		alt="Reddit"></a>
 
 <a href="https://discord.gg/bZBDRapczM">
 	<img src="https://img.shields.io/discord/1203954289232580628?logo=discord"
 		alt="chat on Discord"></a>
-
-<a href="https://www.reddit.com/r/RoboCivix/">
-	<img src="https://img.shields.io/badge/reddit-RoboCivix-blue?logo=reddit"
-		alt="Reddit"></a>
-
 
 
 <img align="right" style="float:right; clear:both; display: block;" src="doc/images/robocivix-logo-128.svg">
