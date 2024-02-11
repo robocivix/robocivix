@@ -5,15 +5,14 @@
 		alt="Robocivix home page"></a>
 
 <a href="https://www.reddit.com/r/RoboCivix/">
-	<img src="https://img.shields.io/badge/RoboCivix-blue?logo=reddit"
+	<img src="https://img.shields.io/badge/Reddit-RoboCivix-blue?logo=reddit"
 		alt="Reddit"></a>
 
 <a href="https://discord.gg/bZBDRapczM">
 	<img src="https://img.shields.io/discord/1203954289232580628?logo=discord"
 		alt="chat on Discord"></a>
 
-
-<img align="right" style="float:right; clear:both; display: block;" src="doc/images/robocivix-logo-128.svg">
+<img align="right" style="float:right; clear:both; display: block; width:128px; height:128px" src="doc/logo/robocivix-logo-light.svg">
 
 
 - [RoboCivix](#robocivix)
