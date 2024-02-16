@@ -1,8 +1,7 @@
 
 core
 	cli intepreter
-	base model
-	
+	base model	
 	worker robot
 	machine robot
 	area robot
