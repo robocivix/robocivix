@@ -110,14 +110,17 @@ Contributors can observe how minor changes in programming can lead to significan
 A robot-based simulation raises interesting technological questions about AI and machine learning, as well as ethical considerations regarding the autonomy and evolution of artificial beings.
 These aspects can make the simulation not just an engaging experience but also a platform for deeper discussions and learning.
 
+
 # Technical North Star
 - Decentralized architecture. Each contributor could run part of the universe offline without connecting to the internet. But when connected, the update to the contributor's world can be uploaded to the network, and updates from other contributors' worlds can be synchronized.
 - Explicit communication layer separation, for the fundamental internet protocol evolution in future.
 - 
 
 # Development Principles
-- DP1: Writing code for any robot in my world is easy.
-- DP2: Writing code for any robot in my world is fun.
+- DP1 - **Easy**: Writing code for any robot in my world is easy.
+- DP2 - **Fun**: Writing code for any robot in my world is fun.
+- DP3 - **Transparent**: The state of each entity (robot, machine, area, world, universe) must be transparent and can be easily inspected. The result of each consequence should be easily traced.
+- DP4 - **Sharding**: the universe is sharded and can have overlap. So that each offline world system can work by itself with a few other worlds in the shard of the universe.
 
 # Managing the Rules
 - **Governance Model**: 
