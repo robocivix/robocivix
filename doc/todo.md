@@ -45,6 +45,7 @@ doc & community
 	starter guide doc
 	starter guide video
 	advanced dev guide
+	readthedocs.io
 
 	robocivix.com/robocivix.org -> robocivix.github.io
 	link from robocivix.github.io to source repo

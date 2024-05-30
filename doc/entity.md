@@ -6,6 +6,7 @@
 - Robot
 - Machine
 - Cargo Wagon
+- Platform
 
 ## Map
 - Room
