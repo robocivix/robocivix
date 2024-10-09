@@ -24,6 +24,13 @@
 - [Development Principles](#development-principles)
 - [Managing the Rules](#managing-the-rules)
 
+# North Star
+RoboCivix:
+- Is a long running system that runs for more than 100 years.
+- Bears the mark of contributors.
+- Is a civilization simulation.
+- Is a universe formed by worlds. Each world is designed by its contributor. World consists of large amount of intelligent entities.
+- Consists of fundamental mechanisms and rules, not policies.
 
 # Behind the Scene
 The RoboCivix universe and the worlds created by contributors help to fulfill the achievement psychology need of contributors, by:
