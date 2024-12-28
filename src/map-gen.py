@@ -3,9 +3,9 @@
 import random
 import json
 
-
-width = 400
-height = 300
+CHUNK_SIZE = 16
+width = 48
+height = 32
 
 # [
 #     [{"type": "ore", "quantity": 13245}, {"type": "water", "quantity": 5000}, null],
@@ -13,23 +13,28 @@ height = 300
 #     [{"type": "water", "quantity": 3000}, null, {"type": "ore", "quantity": 10000}]
 # ]
 
-data = [None] * height
+data = {}
 types = ["ore", "water"]
 density = 0.1
 
-for y in range(height):
-    row = [None] * width
-    data[y] = row
-    for x in range(width):
-        if random.random() > density:
-            continue
+for cy in range(height):
+    for cx in range(width):
+        chunk = [None] * CHUNK_SIZE
+        chunk_key = f'{cx},{cy}'
+        data[chunk_key] = chunk
 
-        cell = {
-            "type": random.choice(types),
-            "value": int(random.random() * 10000)
-        }
-        row[x] = cell
+        for y in range(CHUNK_SIZE):
+            row = chunk[y] = [None] * CHUNK_SIZE
+            for x in range(CHUNK_SIZE):
+                if random.random() > density:
+                    continue
 
-with open("map-data.json", "wt") as file:
+                cell = {
+                    "type": random.choice(types),
+                    "value": int(random.random() * 10000)
+                }
+                row[x] = cell
+
+with open("data/map-data.json", "wt") as file:
     json.dump(data, file, indent=4)
 

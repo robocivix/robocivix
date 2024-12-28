@@ -8,7 +8,8 @@ export class PrepareScene extends Scene
 	}
 
 	preload () {
-		this.load.json("map-data", 'map-data.json')
+		//this.load.json("map-data", 'map-data.json')
+
 	}
 
 	create () {

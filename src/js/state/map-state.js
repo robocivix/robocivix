@@ -23,7 +23,34 @@ class MapState {
 		this.addListeners = new Set()
 		this.updateListeners = new Set()
 		this.deleteListeners = new Set()
+		this._devMapGround = null
+		this.bounds = {
+			x: 0,
+			y: 0,
+			w: 0,
+			h: 0
+		}
 	}
+
+	async _devInit() {
+		if (this._devMapGround == null) {
+			await fetch('data/map-data.json')
+				.then(response => response.json())
+				.then(data => {
+					console.log(data)
+					this._devMapGround = data
+					this.bounds.w = 48 * CHUNK_SIZE
+					this.bounds.h = 32 * CHUNK_SIZE
+				}).catch(console.error)
+		}
+	}
+
+
+	getChunkGround(cx, cy) {
+		const k = `${cx},${cy}`
+		return this._devMapGround[k]
+	}
+
 
 	subscribeToAdd(listener) {
 		this.addListeners.add(listener)
@@ -44,12 +71,13 @@ class MapState {
 		const cx = Math.floor(x / CHUNK_SIZE) * CHUNK_SIZE
 		const cy = Math.floor(y / CHUNK_SIZE) * CHUNK_SIZE
 		const k = `${cx},${cy}`
-		let c = this.chunks[k]
-		if (!c && create) {
-			c = new MapChunk(cx, cy)
-			this.chunks[k] = c
+		let chunk = this.chunks[k]
+		if (!chunk && create) {
+			chunk = new MapChunk(cx, cy)
+			chunk.groundLayer = this.getChunkGround(cx, cy)
+			this.chunks[k] = chunk
 		}
-		return c
+		return chunk
 	}
 
 	getChunks(x, y, right, bottom) {

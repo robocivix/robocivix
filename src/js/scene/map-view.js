@@ -11,6 +11,7 @@ export class MapViewScene extends Scene
 	constructor() {
 		super('MapViewScene')
 		this.debugOverlay = new DebugOverlay(this)
+		this.focus = null
 	}
 
 	preload () {
@@ -18,6 +19,7 @@ export class MapViewScene extends Scene
 			frameWidth: 64,
 			frameHeight: 64,
 		})
+		this.prepareTextures()
 	}
 
 	create () {
@@ -27,7 +29,6 @@ export class MapViewScene extends Scene
 		this.createAnimations()
 		this.enableClickHandler()
 		this.debugOverlay.init()
-		// Subscribe to individual events
 		mapState.subscribeToAdd(this.handleActorUpdate.bind(this))
 		mapState.subscribeToUpdate(this.handleActorUpdate.bind(this))
 		mapState.subscribeToDelete(this.handleActorDelete.bind(this))
@@ -35,36 +36,36 @@ export class MapViewScene extends Scene
 
 	prepareTextures() {
 		// Create textures for different tile types
-		const textures = this.textures;
-		const tileSize = this.TILE_SIZE;
+		const textures = this.textures
+		const tileSize = this.TILE_SIZE
 	
 		// Helper function to create a tile texture
 		const createTileTexture = (key, color, borderColor = 0xA9A9A9) => {
-			const graphics = this.add.graphics();
+			const graphics = this.add.graphics()
 			
 			// Fill
-			graphics.fillStyle(color, 1);
-			graphics.fillRect(0, 0, tileSize, tileSize);
+			graphics.fillStyle(color, 1)
+			graphics.fillRect(0, 0, tileSize, tileSize)
 			
 			// Border
-			graphics.lineStyle(1, borderColor, 1);
-			graphics.strokeRect(0, 0, tileSize, tileSize);
+			graphics.lineStyle(1, borderColor, 1)
+			graphics.strokeRect(0, 0, tileSize, tileSize)
 	
 			// Generate texture from graphics
-			const rt = this.add.renderTexture(0, 0, tileSize, tileSize);
-			rt.draw(graphics);
-			textures.addRenderTexture(key, rt);
+			const rt = this.add.renderTexture(0, 0, tileSize, tileSize)
+			rt.draw(graphics)
+			textures.addRenderTexture(key, rt)
 			
 			// Clean up
-			graphics.destroy();
-			rt.destroy();
-		};
+			graphics.destroy()
+			//rt.destroy()
+		}
 	
 		// Create different tile textures
-		createTileTexture('tile-default', 0xD3D3D3);    // Light grey for default
-		createTileTexture('tile-empty', 0x808080);      // Dark grey for empty
-		createTileTexture('tile-ore', 0xFFD700);        // Gold color for ore
-		createTileTexture('tile-water', 0x0000FF);     // Blue color for water
+		createTileTexture('tile-default', 0xD3D3D3)    // Light grey for default
+		createTileTexture('tile-empty', 0x808080)      // Dark grey for empty
+		createTileTexture('tile-ore', 0xFFD700)        // Gold color for ore
+		createTileTexture('tile-water', 0x0000FF)     // Blue color for water
 	}
 
 	getMapPosition(viewX, viewY) {
@@ -160,8 +161,7 @@ export class MapViewScene extends Scene
 		for (const [_, actor] of Object.entries(chunk.actors)) {
 			if (actor.sprite) {
 				//console.log('destroy sprite', actor.id, actor.name)
-				actor.sprite.destroy()
-				actor.sprite = null
+				this.destroyActor(actor)
 			}
 		}
 
@@ -183,24 +183,19 @@ export class MapViewScene extends Scene
 					
 					let textureName
 					if (tile === null) {
-						textureName = 'tile-empty'
+						textureName = 'empty'
+					} else if (tile.type === null) {
+						textureName = 'default'
 					} else {
-						switch (tile.type) {
-							case "ore":
-								textureName = 'tile-ore'
-								break
-							case "water": 
-								textureName = 'tile-water'
-								break
-							default:
-								textureName = 'tile-default'
-						}
+						textureName = tile.type
 					}
+					textureName = 'tile-' + textureName
 					
 					const img = this.add.image(worldX, worldY, textureName)
 						.setOrigin(0)
 						.setDepth(-100)
 					chunk.groundImages.push(img)
+					console.log(textureName)
 				}
 			}
 		}
@@ -212,9 +207,8 @@ export class MapViewScene extends Scene
 	}
 
 	renderMap() {
-		const mapData = this.game.cache.json.get('map-data')
-		// Set camera bounds to match the full size of the map
-		this.cameras.main.setBounds(0, 0, mapData[0].length * this.TILE_SIZE, mapData.length * this.TILE_SIZE)
+		
+		this.cameras.main.setBounds(mapState.bounds.x, mapState.bounds.y, mapState.bounds.w * this.TILE_SIZE, mapState.bounds.h * this.TILE_SIZE)
 
 		this.updateVisibleChunks()
 	}
@@ -383,16 +377,16 @@ export class MapViewScene extends Scene
 		let action
 		if (actor.action) {
 			action = 'work'
-		} else if (actor.move) {
+		} else if (actor._move) {
 			action = 'move'
-			let nextX = actor.move.path[0]
+			let nextX = actor._move.path[0]
 			if (actor.x > nextX)
 				direction = 'left'
 			if (actor.x < nextX)
 				direction = 'right'
 			actor.direction = direction
 
-			let nextY = actor.move.path[1]
+			let nextY = actor._move.path[1]
 
 			// Calculate target position in pixels
 			const targetX = Math.round(nextX * this.TILE_SIZE + this.TILE_SIZE/2)
@@ -417,7 +411,7 @@ export class MapViewScene extends Scene
 
 			if (length > 0) {
 				// Calculate movement duration based on distance and speed
-				const pixelsPerSecond = actor.move.speed * this.TILE_SIZE
+				const pixelsPerSecond = actor._move.speed * this.TILE_SIZE
 				const durationInSeconds = length / pixelsPerSecond
 
 				// Create a new tween to move the sprite
@@ -431,7 +425,7 @@ export class MapViewScene extends Scene
 					yoyo: false,
 					onUpdate: () => {
 						// Check if movement was reset
-						if (!actor.move) {
+						if (!actor._move) {
 							tween.stop()
 							return
 						}
@@ -441,22 +435,25 @@ export class MapViewScene extends Scene
 					},
 					onComplete: () => {
 						// Check if movement was reset
-						if (!actor.move) {
+						if (!actor._move) {
 							return
 						}
 						// When reaching waypoint, remove first pair from path
-						actor.move.path.splice(0, 2)
+						actor._move.path.splice(0, 2)
 						
 						// If there are more waypoints, trigger next movement
-						if (actor.move.path.length >= 2) {
+						if (actor._move.path.length >= 2) {
 							this.handleActorUpdate(actor)
 						} else {
 							// there's no movement, 
-							delete actor.move
 							this.handleActorUpdate(actor)
 						}
 					}
 				})
+
+				if (this.focus === actor) {
+					this.drawMovementPath(actor)
+				}
 			}
 		} else {
 			action = 'idle'
@@ -468,9 +465,52 @@ export class MapViewScene extends Scene
 		}
 	}
 
+	drawMovementPath(actor) {
+		const sprite = actor.sprite
+		// If sprite is moving, draw path indicator
+		if (sprite._pathGraphics) {
+			sprite._pathGraphics.destroy()
+		}
+
+		if (actor._move && actor._move.path.length >= 2) {
+			// Create graphics object for path
+			sprite._pathGraphics = this.add.graphics()
+			sprite._pathGraphics.setDepth(-1) // Set depth below sprites
+			sprite._pathGraphics.lineStyle(2, 0x00ff00, 0.5) // Green line, 50% opacity
+
+
+			// Create update function to redraw path from current position
+			const updatePath = () => {
+				sprite._pathGraphics.clear()
+				
+				// Draw thick grey line
+				sprite._pathGraphics.lineStyle(8, 0x888888, 0.6)
+				sprite._pathGraphics.moveTo(sprite.x, sprite.y)
+				if (!actor._move || actor._move.path.length < 2) {
+					sprite._pathGraphics.destroy()
+					return
+				}
+				for (let i = 0; i < actor._move.path.length; i += 2) {
+					const pathX = actor._move.path[i] * this.TILE_SIZE + this.TILE_SIZE/2
+					const pathY = actor._move.path[i+1] * this.TILE_SIZE + this.TILE_SIZE/2
+					sprite._pathGraphics.lineTo(pathX, pathY)
+				}
+				sprite._pathGraphics.strokePath()
+			}
+
+			// Initial draw
+			updatePath()
+
+			// Update path each frame while moving
+			sprite._pathGraphics.update = updatePath
+			// this.events.on('preupdate', updatePath)
+		}
+	}
+
 	focusOnActor(actor) {
 		if (actor) {
 			console.log('focusOnActor', actor)
+			this.focus = actor
 			let sprite = actor.sprite
 
 			// Pan smoothly to sprite position first, then start following
@@ -480,56 +520,25 @@ export class MapViewScene extends Scene
 			this.cameras.main.startFollow(sprite, true)
 			this.cameras.main.setFollowOffset(-sprite.width/2, -sprite.height/2)
 			//this.cameras.main.setLerp(0.05) // Reduced lerp for smoother movement
-			// If sprite is moving, draw path indicator
-			if (sprite._pathGraphics) {
-				sprite._pathGraphics.destroy()
-			}
-
-			if (actor.move && actor.move.path.length >= 2) {
-				// Create graphics object for path
-				sprite._pathGraphics = this.add.graphics()
-				sprite._pathGraphics.setDepth(-1) // Set depth below sprites
-				sprite._pathGraphics.lineStyle(2, 0x00ff00, 0.5) // Green line, 50% opacity
-
-				// Draw path starting from current sprite position
-				const startX = sprite.x 
-				const startY = sprite.y
-
-				// Create update function to redraw path from current position
-				const updatePath = () => {
-					sprite._pathGraphics.clear()
-					
-					// Draw thick grey line
-					sprite._pathGraphics.lineStyle(8, 0x888888, 0.6)
-					sprite._pathGraphics.moveTo(sprite.x, sprite.y)
-					if (!actor.move) {
-						sprite._pathGraphics.destroy()
-						return
-					}
-					for (let i = 0; i < actor.move.path.length; i += 2) {
-						const pathX = actor.move.path[i] * this.TILE_SIZE + this.TILE_SIZE/2
-						const pathY = actor.move.path[i+1] * this.TILE_SIZE + this.TILE_SIZE/2
-						sprite._pathGraphics.lineTo(pathX, pathY)
-					}
-					sprite._pathGraphics.strokePath()
-				}
-
-				// Initial draw
-				updatePath()
-
-				// Update path each frame while moving
-				sprite._pathGraphics.update = updatePath
-				this.events.on('preupdate', updatePath)
-			}
+			
+			this.drawMovementPath(actor)
 		} else {
 			console.log('focusOnActor', 'stopFollow')
 			this.cameras.main.stopFollow()
+			this.focus = null
 		}
 	}
 
 	handleActorDelete(actor) {
+		this.destroyActor(actor)
+	}
+
+	destroyActor(actor) {
 		if (actor.sprite) {
 			actor.sprite.destroy()
+			if (actor.sprite._pathGraphics)
+				actor.sprite._pathGraphics.destroy()
+			actor.sprite = null
 		}
 	}
 }

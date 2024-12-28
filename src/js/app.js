@@ -2,6 +2,7 @@
 import { Scene, Game, Scale, AUTO } from '../node_modules/phaser/dist/phaser.esm.js'
 import { PrepareScene } from './scene/prepare.js'
 import { MapViewScene } from './scene/map-view.js'
+import { mapState } from './state/map-state.js'
 import { demoDriver } from './state/demo-driver.js'	// eslint-disable-line no-unused-vars
 
 const Phaser = {
@@ -25,6 +26,8 @@ function getConfig() {
 	}
 }
 
-const game = new Phaser.Game(getConfig())
 
-console.log(game)
+mapState._devInit().then(() => {
+	const game = new Phaser.Game(getConfig())
+	console.log(game)
+})

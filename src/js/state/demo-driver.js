@@ -1,67 +1,83 @@
 import { mapState } from './map-state.js'
+import {Actor} from './actor.js'
+
+function rand(n) {
+	return Math.random() * n | 0
+}
+
+function randBool() {
+	return Math.random() > 0.5
+}
+
+function onActorUpdate(actor) {
+	mapState.updateActor(actor)
+}
 
 class DemoDriver {
+
 	constructor() {
+		let id = 'r1'
+		let a = new Actor(id, id, 5, 5, onActorUpdate)
+
 		setTimeout(() => {
-			for (let x = 0; x < 4; x++) {
-				for (let y = 0; y < 3; y++) {
-					let id = `r-${x}-${y}`
-					let r = {
-						id,
-						name: id,
-						x, 
-						y
-					}
+			
 
-					this.createAction(r, "mining", 5000)
-				}
-			}
+			// a.move([10, 5, 12, 7])
+			// 	.then(() => console.log("move complete"))
+			// 	.catch(err => console.log("Move interrupted:", err))
 
-			let id = `r1`
-			let r = {
-				id,
-				name: id,
-				x: 5, 
-				y: 5
-			}
-			this.move(r, 1, [10, 5, 15, 10])
+			// setTimeout(() => a.cancel("demo"), 11000)
 
-			id = `r2`
-			r = {
-				id,
-				name: id,
-				x: 7, 
-				y: 7
-			}
-			this.move(r, 2, [3, 7, 3, 3])
+			// a.work("mining", 3000)
+			// 	.then(a => console.log("work done", a))
+			// 	.catch(a => console.log("work interrupted", a))
+
+			// setTimeout(() => a.cancel("demo"), 5000)
+
+			this.randBehavior(a)
 		}, 1000)
 	}
 
-	createAction(robot, name,  duration) {
-		//console.log("Creating action for robot", robot, name, duration)
-
-		let action = {
-			type: name,
-			start: new Date().getTime(),
-			end: new Date().getTime() + duration,
+	randBehavior(actor) {
+		let promise
+		if (randBool()) {
+			let name = 'mining'
+			promise = actor.work(name, rand(1000) + 500)
+		} else {
+			let x = actor.x
+			let y = actor.y
+			let n = rand(3) + 1
+			let path = []
+			for (let i = 0; i < n; i++) {
+				let tx
+				let ty
+				while (true) {
+					if (randBool()) {
+						if (randBool())
+							tx = x + rand(5) + 1
+						else
+							tx = x - rand(5) - 1
+						ty = y
+					} else {
+						tx = x
+						if (randBool())
+							ty = y + rand(5) + 1
+						else
+							ty = y - rand(5) - 1
+					}
+					if (tx > 0 && ty > 0 && tx < 20 && ty < 20)
+						break
+				}
+				path.push(tx)
+				path.push(ty)
+				x = tx
+				y = ty
+			}
+			console.log('path', path)
+			promise = actor.move(path, 1)
 		}
-		robot.action = action
-		mapState.updateActor(robot)
-		setTimeout(() => {
-			//console.log("Action ended for robot", robot)
-			robot.action = null
-			mapState.updateActor(robot)
-		}, duration)
-	}
 
-	move(robot, speed, path) {
-		console.log("Moving robot", robot, path)
-		robot.move = {
-			path,
-			speed,
-			lastUpdate: new Date().getTime()
-		}
-		mapState.updateActor(robot)
+		promise.then(() => this.randBehavior(actor))
 	}
 }
 
