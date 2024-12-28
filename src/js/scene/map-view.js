@@ -1,27 +1,19 @@
 // map-view.js
-import { Scene, Game, Scale, AUTO } from '../node_modules/phaser/dist/phaser.esm.js'
-import { mapState, CHUNK_SIZE } from './map-state.js'
-import { demoDriver } from './demo-driver.js'	// eslint-disable-line no-unused-vars
-import { DebugOverlay } from './debug-overlay.js'
+import { Scene, GameObjects } from '../../node_modules/phaser/dist/phaser.esm.js'
+import { mapState, CHUNK_SIZE } from '../state/map-state.js'
+import { DebugOverlay } from '../components/debug-overlay.js'
 
-const Phaser = {
-	Scene,
-	Game,
-	Scale,
-	AUTO
-}
 
-class MapView extends Phaser.Scene
+export class MapViewScene extends Scene
 {
 	TILE_SIZE = 64
 
 	constructor() {
-		super()
+		super('MapViewScene')
 		this.debugOverlay = new DebugOverlay(this)
 	}
 
 	preload () {
-		this.load.json("map-data", 'map-data.json')
 		this.load.spritesheet('robot1', 'assets/spritesheets/robot1.png', {
 			frameWidth: 64,
 			frameHeight: 64,
@@ -41,6 +33,40 @@ class MapView extends Phaser.Scene
 		mapState.subscribeToDelete(this.handleActorDelete.bind(this))
 	}
 
+	prepareTextures() {
+		// Create textures for different tile types
+		const textures = this.textures;
+		const tileSize = this.TILE_SIZE;
+	
+		// Helper function to create a tile texture
+		const createTileTexture = (key, color, borderColor = 0xA9A9A9) => {
+			const graphics = this.add.graphics();
+			
+			// Fill
+			graphics.fillStyle(color, 1);
+			graphics.fillRect(0, 0, tileSize, tileSize);
+			
+			// Border
+			graphics.lineStyle(1, borderColor, 1);
+			graphics.strokeRect(0, 0, tileSize, tileSize);
+	
+			// Generate texture from graphics
+			const rt = this.add.renderTexture(0, 0, tileSize, tileSize);
+			rt.draw(graphics);
+			textures.addRenderTexture(key, rt);
+			
+			// Clean up
+			graphics.destroy();
+			rt.destroy();
+		};
+	
+		// Create different tile textures
+		createTileTexture('tile-default', 0xD3D3D3);    // Light grey for default
+		createTileTexture('tile-empty', 0x808080);      // Dark grey for empty
+		createTileTexture('tile-ore', 0xFFD700);        // Gold color for ore
+		createTileTexture('tile-water', 0x0000FF);     // Blue color for water
+	}
+
 	getMapPosition(viewX, viewY) {
 		const camera = this.cameras.main
 		const worldPoint = camera.getWorldPoint(viewX, viewY)
@@ -52,38 +78,50 @@ class MapView extends Phaser.Scene
 	createAnimations() {
 		this.anims.create({
 			key: "robot1-move-left",
-			frames: this.anims.generateFrameNumbers("robot1", { start: 0, end: 1 }),
-			frameRate: 4,
+			frames: this.anims.generateFrameNumbers("robot1", { start: 0, end: 0 }),
+			frameRate: 0.1,
 			repeat: -1,
 		})
 		this.anims.create({
 			key: "robot1-move-right",
-			frames: this.anims.generateFrameNumbers("robot1", { start: 2, end: 3 }),
-			frameRate: 4,
+			frames: this.anims.generateFrameNumbers("robot1", { start: 2, end: 2 }),
+			frameRate: 0.1,
 			repeat: -1,
 		})
 		this.anims.create({
 			key: "robot1-work-left",
-			frames: this.anims.generateFrameNumbers("robot1", { start: 4, end: 5 }),
-			frameRate: 8,
+			frames: this.anims.generateFrameNumbers("robot1", { start: 4, end: 4 }),
+			frameRate: 0.1,
 			repeat: -1,
 		})
 		this.anims.create({
 			key: "robot1-work-right",
-			frames: this.anims.generateFrameNumbers("robot1", { start: 6, end: 7 }),
-			frameRate: 8,
+			frames: this.anims.generateFrameNumbers("robot1", { start: 6, end: 6 }),
+			frameRate: 0.1,
 			repeat: -1,
 		})
 		this.anims.create({
 			key: "robot1-idle-left",
-			frames: this.anims.generateFrameNumbers("robot1", { start: 8, end: 9 }),
-			frameRate: 2,
+			frames: this.anims.generateFrameNumbers("robot1", { start: 8, end: 8 }),
+			frameRate: 0.1,
 			repeat: -1,
 		})
 		this.anims.create({
 			key: "robot1-idle-right",
-			frames: this.anims.generateFrameNumbers("robot1", { start: 10, end: 11 }),
-			frameRate: 2,
+			frames: this.anims.generateFrameNumbers("robot1", { start: 10, end: 10 }),
+			frameRate: 0.1,
+			repeat: -1,
+		})
+		this.anims.create({
+			key: "robot1-damaged-left",
+			frames: this.anims.generateFrameNumbers("robot1", { start: 12, end: 12 }),
+			frameRate: 0.1,
+			repeat: -1,
+		})
+		this.anims.create({
+			key: "robot1-damaged-right",
+			frames: this.anims.generateFrameNumbers("robot1", { start: 14, end: 14 }),
+			frameRate: 0.1,
 			repeat: -1,
 		})
 	}
@@ -118,6 +156,7 @@ class MapView extends Phaser.Scene
 	}
 
 	destroyChunkView(chunk) {
+		// Destroy actor sprites
 		for (const [_, actor] of Object.entries(chunk.actors)) {
 			if (actor.sprite) {
 				//console.log('destroy sprite', actor.id, actor.name)
@@ -125,14 +164,51 @@ class MapView extends Phaser.Scene
 				actor.sprite = null
 			}
 		}
-	}
 
+		// Destroy ground tile textures
+		if (chunk.groundImages) {
+			chunk.groundImages.forEach(img => img.destroy())
+			chunk.groundImages = null
+		}
+	}
 	createChunkView(chunk) {
-		// create chunk view
+		// Draw the ground tiles for this chunk using pre-created tile textures
+		if (chunk.groundLayer) {
+			chunk.groundImages = []
+			for (let y = 0; y < CHUNK_SIZE; y++) {
+				for (let x = 0; x < CHUNK_SIZE; x++) {
+					const tile = chunk.groundLayer[y][x]
+					const worldX = (chunk.x + x) * this.TILE_SIZE
+					const worldY = (chunk.y + y) * this.TILE_SIZE
+					
+					let textureName
+					if (tile === null) {
+						textureName = 'tile-empty'
+					} else {
+						switch (tile.type) {
+							case "ore":
+								textureName = 'tile-ore'
+								break
+							case "water": 
+								textureName = 'tile-water'
+								break
+							default:
+								textureName = 'tile-default'
+						}
+					}
+					
+					const img = this.add.image(worldX, worldY, textureName)
+						.setOrigin(0)
+						.setDepth(-100)
+					chunk.groundImages.push(img)
+				}
+			}
+		}
+
+		// Create actors for this chunk
 		for (const [_, actor] of Object.entries(chunk.actors)) {
 			this.handleActorUpdate(actor)
 		}
-		//console.log("createChunkView", chunk.key(), "created sprites:", chunk.actors.length)
 	}
 
 	renderMap() {
@@ -141,48 +217,6 @@ class MapView extends Phaser.Scene
 		this.cameras.main.setBounds(0, 0, mapData[0].length * this.TILE_SIZE, mapData.length * this.TILE_SIZE)
 
 		this.updateVisibleChunks()
-		
-		let n = 0
-		// Render the map tiles based on the map data
-		for (let row = 0; row < mapData.length; row++) {
-			for (let col = 0; col < mapData[row].length; col++) {
-				const tile = mapData[row][col]
-				let color
-				if (tile === null) {
-					color = 0xD3D3D3 // Light grey for empty
-				} else {
-					switch (tile.type) {
-					case "ore":
-						color = 0xFFD700 // Gold color for ore
-						break
-					case "water":
-						color = 0x0000FF // Blue color for water
-						break
-					default:
-						color = 0x808080 // Default gray for unknown types
-					}
-				}
-				this.add.rectangle(col * this.TILE_SIZE, row * this.TILE_SIZE, this.TILE_SIZE, this.TILE_SIZE, color)
-					.setOrigin(0)
-					.setDepth(-100)
-				n++
-			}
-		}
-
-		console.log("renderMap", n)
-		// Draw grid lines (grey)
-		const graphics = this.add.graphics()
-		graphics.lineStyle(1, 0xA9A9A9, 1)
-		graphics.setDepth(-100)
-		for (let row = 0; row <= mapData.length; row++) {
-			graphics.moveTo(0, row * this.TILE_SIZE)
-			graphics.lineTo(mapData[0].length * this.TILE_SIZE, row * this.TILE_SIZE)
-		}
-		for (let col = 0; col <= mapData[0].length; col++) {
-			graphics.moveTo(col * this.TILE_SIZE, 0)
-			graphics.lineTo(col * this.TILE_SIZE, mapData.length * this.TILE_SIZE)
-		}
-		graphics.strokePath()
 	}
 
 	enablePanning() {
@@ -314,7 +348,7 @@ class MapView extends Phaser.Scene
 				// console.log(worldPosition)
 
 				// Only log if click wasn't on a sprite (which would trigger sprite's own handler)
-				if (!pointer.gameObject || !(pointer.gameObject instanceof Phaser.GameObjects.Sprite)) {
+				if (!pointer.gameObject || !(pointer.gameObject instanceof GameObjects.Sprite)) {
 					this.focusOnActor(null)
 				}
 			}
@@ -358,15 +392,23 @@ class MapView extends Phaser.Scene
 				direction = 'right'
 			actor.direction = direction
 
-			let lastUpdate = actor.move.lastUpdate
 			let nextY = actor.move.path[1]
 
 			// Calculate target position in pixels
-			const targetX = nextX * this.TILE_SIZE + this.TILE_SIZE/2
-			const targetY = nextY * this.TILE_SIZE + this.TILE_SIZE/2
+			const targetX = Math.round(nextX * this.TILE_SIZE + this.TILE_SIZE/2)
+			const targetY = Math.round(nextY * this.TILE_SIZE + this.TILE_SIZE/2)
 
-			// Stop any existing tweens on this sprite
-			this.tweens.killTweensOf(sprite)
+			// Check if there's an existing tween with different target
+			const existingTween = this.tweens.getTweensOf(sprite)[0]
+			if (existingTween) {
+				if (existingTween.data[0].end !== targetX || existingTween.data[1].end !== targetY) {
+					// If target changed, kill existing tween
+					existingTween.stop()
+				} else {
+					// If target is the same, keep existing tween
+					return
+				}
+			}
 
 			// Calculate distance to target
 			const dx = targetX - sprite.x
@@ -379,7 +421,7 @@ class MapView extends Phaser.Scene
 				const durationInSeconds = length / pixelsPerSecond
 
 				// Create a new tween to move the sprite
-				this.tweens.add({
+				const tween = this.tweens.add({
 					targets: sprite,
 					x: targetX,
 					y: targetY,
@@ -388,15 +430,22 @@ class MapView extends Phaser.Scene
 					repeat: 0,
 					yoyo: false,
 					onUpdate: () => {
+						// Check if movement was reset
+						if (!actor.move) {
+							tween.stop()
+							return
+						}
 						// Update the actor's position based on sprite position
-						actor.x = (sprite.x - this.TILE_SIZE/2) / this.TILE_SIZE
-						actor.y = (sprite.y - this.TILE_SIZE/2) / this.TILE_SIZE
+						actor.x = Math.round((sprite.x - this.TILE_SIZE/2) / this.TILE_SIZE)
+						actor.y = Math.round((sprite.y - this.TILE_SIZE/2) / this.TILE_SIZE)
 					},
 					onComplete: () => {
+						// Check if movement was reset
+						if (!actor.move) {
+							return
+						}
 						// When reaching waypoint, remove first pair from path
 						actor.move.path.splice(0, 2)
-						// Update last update time
-						actor.move.lastUpdate = Date.now()
 						
 						// If there are more waypoints, trigger next movement
 						if (actor.move.path.length >= 2) {
@@ -484,21 +533,3 @@ class MapView extends Phaser.Scene
 		}
 	}
 }
-
-// Export the config and create the game instance
-function getConfig() {
-	return {
-		type: Phaser.AUTO,
-		width: window.innerWidth,
-		height: window.innerHeight,
-		scene: MapView,
-		scale: {
-			mode: Phaser.Scale.RESIZE,
-			autoCenter: Phaser.Scale.CENTER_BOTH
-		}
-	}
-}
-
-const game = new Phaser.Game(getConfig())
-
-console.log(game)

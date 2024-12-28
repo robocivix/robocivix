@@ -1,5 +1,5 @@
-import { GameObjects } from '../node_modules/phaser/dist/phaser.esm.js'
-import { mapState } from './map-state.js'
+import { GameObjects } from '../../node_modules/phaser/dist/phaser.esm.js'
+import { mapState } from '../state/map-state.js'
 
 export class DebugOverlay {
 	constructor(scene) {
@@ -49,6 +49,7 @@ export class DebugOverlay {
 			`Viewport: (${viewLeftTop.x}, ${viewLeftTop.y}) to (${viewRightBottom.x}, ${viewRightBottom.y})<br>` +
 			`Mouse: (${mapPointer.x}, ${mapPointer.y})<br>` +
 			`Zoom: ${camera.zoom.toFixed(2)}<br>` +
+			`FPS: ${Math.round(this.scene.game.loop.actualFps)}<br>` +
 			`Sprites: ${activeSprites}/${totalSprites}<br>` +
 			`Chunks: ${Object.keys(mapState.subscribedChunks).length}/${Object.keys(mapState.chunks).length}<br>`
 	}

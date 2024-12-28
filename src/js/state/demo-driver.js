@@ -3,19 +3,19 @@ import { mapState } from './map-state.js'
 class DemoDriver {
 	constructor() {
 		setTimeout(() => {
-			// for (let x = 0; x < 2; x++) {
-			// 	for (let y = 0; y < 3; y++) {
-			// 		let id = `r-${x}-${y}`
-			// 		let r = {
-			// 			id,
-			// 			name: id,
-			// 			x, 
-			// 			y
-			// 		}
+			for (let x = 0; x < 4; x++) {
+				for (let y = 0; y < 3; y++) {
+					let id = `r-${x}-${y}`
+					let r = {
+						id,
+						name: id,
+						x, 
+						y
+					}
 
-			// 		this.createAction(r, "mining", 5000)
-			// 	}
-			// }
+					this.createAction(r, "mining", 5000)
+				}
+			}
 
 			let id = `r1`
 			let r = {

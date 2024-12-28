@@ -1,3 +1,4 @@
+
 export const CHUNK_SIZE = 16
 
 class MapChunk {
@@ -5,6 +6,8 @@ class MapChunk {
 		this.x = x
 		this.y = y
 		this.actors = {}
+		this.groundLayer = null
+		this.groundImages = null
 	}
 
 	key() {
