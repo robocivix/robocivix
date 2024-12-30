@@ -83,14 +83,14 @@ export class Actor {
 	move(path, speed = 1) {
 
 		this._move = {
-			path,
+			path: [...path], // Create a clone of the path array
 			speed,
 			lastUpdate: new Date().getTime()
 		}
 
 		const step = calculateMoveStep(this)
 		if (!step)
-			throw "Invalid move config. No need to move."
+			throw `Invalid move config. No need to move. id=${this.id}, xy=(${this.x},${this.y}), path=${path}`
 
 		const actor = this
 		return startAction(this, (resolve, future) => {

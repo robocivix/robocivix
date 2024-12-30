@@ -15,12 +15,58 @@ function onActorUpdate(actor) {
 
 class DemoDriver {
 
-	constructor() {
-		let id = 'r1'
-		let a = new Actor(id, id, 5, 5, onActorUpdate)
-		let b = new Actor("r2", "r2", 7, 7, onActorUpdate)
+	createRectangle() {
+		let baseX = 13
+		let baseY = 7
+		let w = 5
+		let r = new Actor("rectangle", "rectangle", baseX, baseY, onActorUpdate)
+		const path = [baseX + w, baseY, baseX + w, baseY + w, baseX, baseY + w, baseX, baseY]
+		function moveRectangle() {
+			r.move(path).then(() => setTimeout(moveRectangle, 0))
+		}
+		moveRectangle()
+	}
+
+	createBackAndForth() {
+		let baseX = 13
+		let baseY = 13
+		let w = 7
+		let r = new Actor("backAndForth", "backAndForth", baseX, baseY, onActorUpdate)
+		const path = [baseX + w, baseY, baseX, baseY]
+		function moveBackAndForth() {
+			r.move(path).then(() => setTimeout(moveBackAndForth, 0))
+		}
+		moveBackAndForth()
+	}
+
+	createRandom(n) {
+		for (let i = 0; i < n; i++) {
+			const id = `rand${i}`
+			let x = rand(10) + 5
+			let y = rand(10) + 5
+			let d = new Actor(id, id, x, y, onActorUpdate)
+			this.randBehavior(d)
+		}
+	}
+
+	createStatic() {
+		let a = new Actor("r1", "r1", 5, 5, onActorUpdate)
+		let b = new Actor("r2", "r2", 25, 7, onActorUpdate)
+		
+		onActorUpdate(a)
+		onActorUpdate(b)
+	}
+
+	init() {
+
 
 		setTimeout(() => {
+			//this.createStatic()
+			this.createRandom(100)
+			//this.createRectangle()
+			//this.createBackAndForth()
+
+
 			
 			// a.move([10, 5, 12, 7])
 			// 	.then(() => console.log("move complete"))
@@ -34,16 +80,16 @@ class DemoDriver {
 
 			// setTimeout(() => a.cancel("demo"), 5000)
 
-			this.randBehavior(a)
-			this.randBehavior(b)
+			// this.randBehavior(a)
+			// this.randBehavior(b)
 
-			for (let x = 0; x < 100; x++) {
-				for (let y = 0; y < 20; y++) {
-					id = `r-${x}-${y}`
-					let b = new Actor(id, id, x, y, onActorUpdate)
-					this.randBehavior(b)
-				}
-			}
+			// for (let x = 0; x < 20; x++) {
+			// 	for (let y = 0; y < 10; y++) {
+			// 		id = `r-${x}-${y}`
+			// 		let b = new Actor(id, id, x, y, onActorUpdate)
+			// 		this.randBehavior(b)
+			// 	}
+			// }
 		}, 1000)
 	}
 
@@ -85,7 +131,6 @@ class DemoDriver {
 				x = tx
 				y = ty
 			}
-			console.log('path', path)
 			promise = actor.move(path, 1)
 		}
 

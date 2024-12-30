@@ -2,7 +2,7 @@
 import { Scene, GameObjects } from '../../node_modules/phaser/dist/phaser.esm.js'
 import { mapState, CHUNK_SIZE } from '../state/map-state.js'
 import { DebugOverlay } from '../components/debug-overlay.js'
-
+import { Res } from '../misc/res.js'
 
 export class MapViewScene extends Scene
 {
@@ -12,21 +12,20 @@ export class MapViewScene extends Scene
 		super('MapViewScene')
 		this.debugOverlay = new DebugOverlay(this)
 		this.focus = null
+		this.res = new Res(this)
 	}
 
 	preload () {
-		this.load.spritesheet('robot1', 'assets/spritesheets/robot1.png', {
-			frameWidth: 64,
-			frameHeight: 64,
-		})
-		this.prepareTextures()
+		this.res.preloadSprites()
+		this.res.prepareTextures()
 	}
 
 	create () {
+		
 		this.renderMap()
 		this.enablePanning()
 		this.enableZoom()
-		this.createAnimations()
+		this.res.createAnimations()
 		this.enableClickHandler()
 		this.debugOverlay.init()
 		mapState.subscribeToAdd(this.handleActorUpdate.bind(this))
@@ -34,39 +33,6 @@ export class MapViewScene extends Scene
 		mapState.subscribeToDelete(this.handleActorDelete.bind(this))
 	}
 
-	prepareTextures() {
-		// Create textures for different tile types
-		const textures = this.textures
-		const tileSize = this.TILE_SIZE
-	
-		// Helper function to create a tile texture
-		const createTileTexture = (key, color, borderColor = 0xA9A9A9) => {
-			const graphics = this.add.graphics()
-			
-			// Fill
-			graphics.fillStyle(color, 1)
-			graphics.fillRect(0, 0, tileSize, tileSize)
-			
-			// Border
-			graphics.lineStyle(1, borderColor, 1)
-			graphics.strokeRect(0, 0, tileSize, tileSize)
-	
-			// Generate texture from graphics
-			const rt = this.add.renderTexture(0, 0, tileSize, tileSize)
-			rt.draw(graphics)
-			textures.addRenderTexture(key, rt)
-			
-			// Clean up
-			graphics.destroy()
-			//rt.destroy()
-		}
-	
-		// Create different tile textures
-		createTileTexture('tile-default', 0xD3D3D3)    // Light grey for default
-		createTileTexture('tile-empty', 0x808080)      // Dark grey for empty
-		createTileTexture('tile-ore', 0xFFD700)        // Gold color for ore
-		createTileTexture('tile-water', 0x0000FF)     // Blue color for water
-	}
 
 	getMapPosition(viewX, viewY) {
 		const camera = this.cameras.main
@@ -76,56 +42,6 @@ export class MapViewScene extends Scene
 		return { x: mapX, y: mapY }
 	}
 
-	createAnimations() {
-		this.anims.create({
-			key: "robot1-move-left",
-			frames: this.anims.generateFrameNumbers("robot1", { start: 0, end: 0 }),
-			frameRate: 0.1,
-			repeat: -1,
-		})
-		this.anims.create({
-			key: "robot1-move-right",
-			frames: this.anims.generateFrameNumbers("robot1", { start: 2, end: 2 }),
-			frameRate: 0.1,
-			repeat: -1,
-		})
-		this.anims.create({
-			key: "robot1-work-left",
-			frames: this.anims.generateFrameNumbers("robot1", { start: 4, end: 4 }),
-			frameRate: 0.1,
-			repeat: -1,
-		})
-		this.anims.create({
-			key: "robot1-work-right",
-			frames: this.anims.generateFrameNumbers("robot1", { start: 6, end: 6 }),
-			frameRate: 0.1,
-			repeat: -1,
-		})
-		this.anims.create({
-			key: "robot1-idle-left",
-			frames: this.anims.generateFrameNumbers("robot1", { start: 8, end: 8 }),
-			frameRate: 0.1,
-			repeat: -1,
-		})
-		this.anims.create({
-			key: "robot1-idle-right",
-			frames: this.anims.generateFrameNumbers("robot1", { start: 10, end: 10 }),
-			frameRate: 0.1,
-			repeat: -1,
-		})
-		this.anims.create({
-			key: "robot1-damaged-left",
-			frames: this.anims.generateFrameNumbers("robot1", { start: 12, end: 12 }),
-			frameRate: 0.1,
-			repeat: -1,
-		})
-		this.anims.create({
-			key: "robot1-damaged-right",
-			frames: this.anims.generateFrameNumbers("robot1", { start: 14, end: 14 }),
-			frameRate: 0.1,
-			repeat: -1,
-		})
-	}
 
 	updateVisibleChunks() {
 		// Get viewport dimensions in world coordinates
@@ -181,21 +97,17 @@ export class MapViewScene extends Scene
 					const worldX = (chunk.x + x) * this.TILE_SIZE
 					const worldY = (chunk.y + y) * this.TILE_SIZE
 					
-					let textureName
+					let textureName = 'tile-default'
 					if (tile === null) {
-						textureName = 'empty'
-					} else if (tile.type === null) {
-						textureName = 'default'
-					} else {
-						textureName = tile.type
+						textureName = 'tile-empty'
+					} else if (tile.type) {
+						textureName = `tile-${tile.type}`
 					}
-					textureName = 'tile-' + textureName
 					
 					const img = this.add.image(worldX, worldY, textureName)
 						.setOrigin(0)
 						.setDepth(-100)
 					chunk.groundImages.push(img)
-					console.log(textureName)
 				}
 			}
 		}
@@ -252,7 +164,7 @@ export class MapViewScene extends Scene
 
 			// Start decay animation
 			if (Math.abs(this.panVelocity.x) > 0 || Math.abs(this.panVelocity.y) > 0) {
-				const decayDuration = 1000 // 1 second
+				const decayDuration = 500 // 1 second
 				const startVelocity = { ...this.panVelocity }
 				
 				let startTime = null
@@ -351,8 +263,8 @@ export class MapViewScene extends Scene
 
 	handleActorUpdate(actor) {
 		let sprite = actor.sprite
-		let x = actor.x * this.TILE_SIZE + this.TILE_SIZE / 2
-		let y = actor.y * this.TILE_SIZE + this.TILE_SIZE / 2
+		let x = Math.round(actor.x * this.TILE_SIZE + this.TILE_SIZE / 2)
+		let y = Math.round(actor.y * this.TILE_SIZE + this.TILE_SIZE / 2)
 		if (sprite) {
 			sprite.x = x
 			sprite.y = y
@@ -426,28 +338,13 @@ export class MapViewScene extends Scene
 					onUpdate: () => {
 						// Check if movement was reset
 						if (!actor._move) {
+							console.log("handleActorUpdate, tween stopped")
 							tween.stop()
+							tween.remove() // Remove tween from Phaser's tween manager
 							return
 						}
-						// Update the actor's position based on sprite position
-						actor.x = Math.round((sprite.x - this.TILE_SIZE/2) / this.TILE_SIZE)
-						actor.y = Math.round((sprite.y - this.TILE_SIZE/2) / this.TILE_SIZE)
 					},
 					onComplete: () => {
-						// Check if movement was reset
-						if (!actor._move) {
-							return
-						}
-						// When reaching waypoint, remove first pair from path
-						actor._move.path.splice(0, 2)
-						
-						// If there are more waypoints, trigger next movement
-						if (actor._move.path.length >= 2) {
-							this.handleActorUpdate(actor)
-						} else {
-							// there's no movement, 
-							this.handleActorUpdate(actor)
-						}
 					}
 				})
 
@@ -514,13 +411,46 @@ export class MapViewScene extends Scene
 			this.focus = actor
 			let sprite = actor.sprite
 
-			// Pan smoothly to sprite position first, then start following
-			const targetX = sprite.x - this.cameras.main.width / 2
-			const targetY = sprite.y - this.cameras.main.height / 2
-			this.cameras.main.pan(targetX, targetY, 0) // Set position immediately
-			this.cameras.main.startFollow(sprite, true)
-			this.cameras.main.setFollowOffset(-sprite.width/2, -sprite.height/2)
-			//this.cameras.main.setLerp(0.05) // Reduced lerp for smoother movement
+			// Create a tween that updates each frame to follow the moving sprite
+			const tween = {
+				camera: this.cameras.main,
+				sprite,
+				progress: 0,
+				duration: 500,
+				startX: this.cameras.main.scrollX,
+				startY: this.cameras.main.scrollY,
+				active: true
+			}
+
+			// Add update function to scene
+			const tweenUpdate = () => {
+				if (!tween.active) return
+
+				// Calculate current target position (center of sprite)
+				const targetX = Math.round(sprite.x - tween.camera.width/2 + this.TILE_SIZE/2)
+				const targetY = Math.round(sprite.y - tween.camera.height/2 + this.TILE_SIZE/2)
+
+				// Update progress
+				tween.progress += this.game.loop.delta
+				const t = Math.min(tween.progress / tween.duration, 1)
+				
+				// Cubic ease out
+				const ease = 1 - Math.pow(1 - t, 3)
+
+				// Interpolate camera position
+				tween.camera.scrollX = tween.startX + (targetX - tween.startX) * ease
+				tween.camera.scrollY = tween.startY + (targetY - tween.startY) * ease
+
+				// When complete, start following
+				if (t === 1) {
+					tween.active = false
+					this.cameras.main.startFollow(sprite, true)
+					this.cameras.main.setFollowOffset(-sprite.width/2, -sprite.height/2)
+					this.events.off('update', tweenUpdate)
+				}
+			}
+
+			this.events.on('update', tweenUpdate)
 			
 			this.drawMovementPath(actor)
 		} else {
@@ -530,6 +460,7 @@ export class MapViewScene extends Scene
 				this.focus.sprite._pathGraphics.destroy()
 				this.focus.sprite._pathGraphics = null
 			}
+			this.focus = null
 		}
 	}
 
