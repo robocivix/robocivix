@@ -18,10 +18,10 @@ class DemoDriver {
 	constructor() {
 		let id = 'r1'
 		let a = new Actor(id, id, 5, 5, onActorUpdate)
+		let b = new Actor("r2", "r2", 7, 7, onActorUpdate)
 
 		setTimeout(() => {
 			
-
 			// a.move([10, 5, 12, 7])
 			// 	.then(() => console.log("move complete"))
 			// 	.catch(err => console.log("Move interrupted:", err))
@@ -35,6 +35,15 @@ class DemoDriver {
 			// setTimeout(() => a.cancel("demo"), 5000)
 
 			this.randBehavior(a)
+			this.randBehavior(b)
+
+			for (let x = 0; x < 100; x++) {
+				for (let y = 0; y < 20; y++) {
+					id = `r-${x}-${y}`
+					let b = new Actor(id, id, x, y, onActorUpdate)
+					this.randBehavior(b)
+				}
+			}
 		}, 1000)
 	}
 
@@ -46,7 +55,7 @@ class DemoDriver {
 		} else {
 			let x = actor.x
 			let y = actor.y
-			let n = rand(3) + 1
+			let n = rand(4) + 1
 			let path = []
 			for (let i = 0; i < n; i++) {
 				let tx
@@ -57,15 +66,18 @@ class DemoDriver {
 							tx = x + rand(5) + 1
 						else
 							tx = x - rand(5) - 1
-						ty = y
 					} else {
 						tx = x
+					}
+					if (randBool()) {
 						if (randBool())
 							ty = y + rand(5) + 1
 						else
 							ty = y - rand(5) - 1
+					} else {
+						ty = y
 					}
-					if (tx > 0 && ty > 0 && tx < 20 && ty < 20)
+					if (tx > 0 && ty > 0 && tx < 20 && ty < 20 && (tx !== x || ty !== y))
 						break
 				}
 				path.push(tx)
@@ -77,7 +89,7 @@ class DemoDriver {
 			promise = actor.move(path, 1)
 		}
 
-		promise.then(() => this.randBehavior(actor))
+		promise.then(() => setTimeout(() => this.randBehavior(actor), 0))
 	}
 }
 

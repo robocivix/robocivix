@@ -488,6 +488,7 @@ export class MapViewScene extends Scene
 				sprite._pathGraphics.moveTo(sprite.x, sprite.y)
 				if (!actor._move || actor._move.path.length < 2) {
 					sprite._pathGraphics.destroy()
+					sprite._pathGraphics = null
 					return
 				}
 				for (let i = 0; i < actor._move.path.length; i += 2) {
@@ -525,7 +526,10 @@ export class MapViewScene extends Scene
 		} else {
 			console.log('focusOnActor', 'stopFollow')
 			this.cameras.main.stopFollow()
-			this.focus = null
+			if (this.focus && this.focus.sprite && this.focus.sprite._pathGraphics) {
+				this.focus.sprite._pathGraphics.destroy()
+				this.focus.sprite._pathGraphics = null
+			}
 		}
 	}
 
@@ -536,8 +540,10 @@ export class MapViewScene extends Scene
 	destroyActor(actor) {
 		if (actor.sprite) {
 			actor.sprite.destroy()
-			if (actor.sprite._pathGraphics)
+			if (actor.sprite._pathGraphics) {
 				actor.sprite._pathGraphics.destroy()
+				actor.sprite._pathGraphics = null
+			}
 			actor.sprite = null
 		}
 	}
