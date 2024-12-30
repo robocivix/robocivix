@@ -36,7 +36,8 @@ export default [
 			"data/*",
 			"**/temp.js",
 			"config/*",
-			"**/t.js"
+			"**/t.js",
+			"dist/*"
 		]
 	}
 ]

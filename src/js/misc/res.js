@@ -20,8 +20,7 @@ export class Res {
 		})
 	}
 
-	prepareTextures() {
-		const tileSize = this.scene.TILE_SIZE
+	prepareTextures(tileSize) {
 		// Helper function to create a tile texture
 		const createTileTexture = (key, color, borderColor = 0xA9A9A9) => {
 			const graphics = this.scene.add.graphics()

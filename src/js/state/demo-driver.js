@@ -56,15 +56,32 @@ class DemoDriver {
 		onActorUpdate(a)
 		onActorUpdate(b)
 	}
+	
+	createMovingStopped() {
+		let a = new Actor("move-and-stop", "move-and-stop", 5, 6, onActorUpdate)
+		a.move([10, 6])
+		setTimeout(() => a.cancel(), 2000)			
+	}
+
+	createMovingDestroyed() {
+		let a = new Actor("move-and-destroy", "move-and-destroy", 5, 7, onActorUpdate)
+		a.move([10, 7])
+		setTimeout(() => {
+			a.cancel()
+			mapState.deleteActor(a)
+		}, 2000)			
+	}
 
 	init() {
 
 
 		setTimeout(() => {
 			//this.createStatic()
-			this.createRandom(100)
-			//this.createRectangle()
-			//this.createBackAndForth()
+			this.createMovingStopped()
+			this.createMovingDestroyed()
+			//this.createRandom(1000)
+			this.createRectangle()
+			this.createBackAndForth()
 
 
 			

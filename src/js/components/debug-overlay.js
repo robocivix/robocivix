@@ -36,9 +36,9 @@ export class DebugOverlay {
 	update() {
 		const camera = this.scene.cameras.main
 		const pointer = this.scene.input.activePointer
-		const mapPointer = pointer ? this.scene.viewToWorldPosition(pointer.x, pointer.y) : {x: 0, y: 0}
-		const viewLeftTop = this.scene.viewToWorldPosition(0, 0)
-		const viewRightBottom = this.scene.viewToWorldPosition(camera.width, camera.height)
+		const mapPointer = pointer ? this.scene.helper.viewToWorldPosition(pointer.x, pointer.y) : {x: 0, y: 0}
+		const viewLeftTop = this.scene.helper.viewToWorldPosition(0, 0)
+		const viewRightBottom = this.scene.helper.viewToWorldPosition(camera.width, camera.height)
 
 		// Count active sprites
 		const allSprites = this.scene.children.list.filter(x => x instanceof GameObjects.Sprite)

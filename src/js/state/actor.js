@@ -26,26 +26,26 @@ function calculateMoveStep(actor) {
 }
 
 function startAction(actor, impl) {
-	if (actor.future) {
+	if (actor._future) {
 		const msg = "Error creating action: Already doing something"
 		console.error(msg, actor)
 		throw msg
 	}
 
 	const future = {}
-	future.promise = new Promise((resolve, reject) => {
-		future.reject = reject
-		impl(resolve, reject)
+	future.promise = new Promise((resolve, _reject) => {
+		future.resolve = resolve
+		impl(resolve, future)
 	})
 	future.cancel = () => {
 		clearTimeout(future.timer)
-		actor.future = null
-		future.reject(actor)
+		actor._future = null
+		future.resolve(actor)
 		actor._move = null
-		actor.onUpdate(actor)
+		actor._onUpdate(actor)
 	}
-	actor.future = future
-	actor.onUpdate(actor)
+	actor._future = future
+	actor._onUpdate(actor)
 	return future.promise
 }
 
@@ -55,10 +55,10 @@ export class Actor {
 		this.name = name
 		this.x = x
 		this.y = y
-		this.onUpdate = onUpdate
 		this.action = null
+		this._onUpdate = onUpdate
 		this._move = null
-		this.future = null
+		this._future = null
 	}
 
 	work(name, duration) {
@@ -72,10 +72,10 @@ export class Actor {
 		const actor = this
 		return startAction(this, (resolve, future) => {
 			future.timer = setTimeout(() => {
-				actor.future = null
+				actor._future = null
 				resolve(actor)
 				actor.action = null
-				actor.onUpdate(actor)
+				actor._onUpdate(actor)
 			}, duration)
 		})
 	}
@@ -105,11 +105,11 @@ export class Actor {
 					future.timer = setTimeout(onStepComplete, newStep.duration)
 				} else {
 					//move complete
-					actor.future = null
+					actor._future = null
 					resolve(actor)
 					actor._move = null
 				}
-				actor.onUpdate(actor)
+				actor._onUpdate(actor)
 			}
 			future.timer = setTimeout(onStepComplete, step.duration)
 		})
@@ -117,8 +117,8 @@ export class Actor {
 
 
 	cancel(reason) {
-		if (this.future) {
-			this.future.cancel(reason)
+		if (this._future) {
+			this._future.cancel(reason)
 		}
 	}
 }

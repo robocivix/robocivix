@@ -1,3 +1,4 @@
+import { generateMap } from "./map-gen.js"
 
 export const CHUNK_SIZE = 16
 
@@ -30,20 +31,26 @@ class MapState {
 			w: 0,
 			h: 0
 		}
+
+		const w = 48
+		const h = 32	
+		this._devMapGround = generateMap(CHUNK_SIZE, w, h)
+		this.bounds.w = w * CHUNK_SIZE
+		this.bounds.h = h * CHUNK_SIZE
 	}
 
-	async _devInit() {
-		if (this._devMapGround == null) {
-			await fetch('data/map-data.json')
-				.then(response => response.json())
-				.then(data => {
-					console.log(data)
-					this._devMapGround = data
-					this.bounds.w = 48 * CHUNK_SIZE
-					this.bounds.h = 32 * CHUNK_SIZE
-				}).catch(console.error)
-		}
-	}
+	// async _devInit() {
+	// 	if (this._devMapGround == null) {
+	// 		await fetch('data/map-data.json')
+	// 			.then(response => response.json())
+	// 			.then(data => {
+	// 				console.log(data)
+	// 				this._devMapGround = data
+	// 				this.bounds.w = 48 * CHUNK_SIZE
+	// 				this.bounds.h = 32 * CHUNK_SIZE
+	// 			}).catch(console.error)
+	// 	}
+	// }
 
 
 	getChunkGround(cx, cy) {
@@ -73,9 +80,14 @@ class MapState {
 		const k = `${cx},${cy}`
 		let chunk = this.chunks[k]
 		if (!chunk && create) {
-			chunk = new MapChunk(cx, cy)
-			chunk.groundLayer = this.getChunkGround(cx, cy)
-			this.chunks[k] = chunk
+			const groundLayer = this.getChunkGround(cx, cy)
+			if (groundLayer) {
+				chunk = new MapChunk(cx, cy)
+				chunk.groundLayer = groundLayer
+				this.chunks[k] = chunk
+			} else {
+				chunk = null
+			}
 		}
 		return chunk
 	}
@@ -86,7 +98,10 @@ class MapState {
 		const cyStart = Math.floor(y / CHUNK_SIZE) * CHUNK_SIZE
 		for (let cx = cxStart; cx < right + CHUNK_SIZE; cx += CHUNK_SIZE) {
 			for (let cy = cyStart; cy < bottom + CHUNK_SIZE; cy += CHUNK_SIZE) {
-				chunks.push(this.getChunk(cx, cy))
+				const chunk = this.getChunk(cx, cy)	
+				if (chunk) {
+					chunks.push(chunk)
+				}
 			}
 		}
 		return chunks
