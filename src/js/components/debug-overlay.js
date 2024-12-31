@@ -36,22 +36,33 @@ export class DebugOverlay {
 	update() {
 		const camera = this.scene.cameras.main
 		const pointer = this.scene.input.activePointer
-		const mapPointer = pointer ? this.scene.helper.viewToWorldPosition(pointer.x, pointer.y) : {x: 0, y: 0}
-		const viewLeftTop = this.scene.helper.viewToWorldPosition(0, 0)
-		const viewRightBottom = this.scene.helper.viewToWorldPosition(camera.width, camera.height)
+		const mapPointer = pointer ? this.scene.coordinationHelper.viewToWorldPosition(pointer.x, pointer.y) : {x: 0, y: 0}
+		const viewLeftTop = this.scene.coordinationHelper.viewToWorldPosition(0, 0)
+		const viewRightBottom = this.scene.coordinationHelper.viewToWorldPosition(camera.width, camera.height)
 
 		// Count active sprites
 		const allSprites = this.scene.children.list.filter(x => x instanceof GameObjects.Sprite)
 		const activeSprites = allSprites.filter(x => x.visible).length
 		const totalSprites = allSprites.length
 
-		this.overlay.innerHTML = 
+
+		let text =
 			`Viewport: (${viewLeftTop.x}, ${viewLeftTop.y}) to (${viewRightBottom.x}, ${viewRightBottom.y})<br>` +
 			`Mouse: (${mapPointer.x}, ${mapPointer.y})<br>` +
 			`Zoom: ${camera.zoom.toFixed(2)}<br>` +
 			`FPS: ${Math.round(this.scene.game.loop.actualFps)}<br>` +
 			`Sprites: ${activeSprites}/${totalSprites}<br>` +
 			`Chunks: ${Object.keys(mapState.subscribedChunks).length}/${Object.keys(mapState.chunks).length}<br>`
+		if (this.info) {
+			text += `${this.info}: ${this.object}<br>`
+		}
+		this.overlay.innerHTML = text
+	}
+
+	message(info, object) {
+		this.info = info
+		this.object = object
+		this.update()
 	}
 
 	destroy() {

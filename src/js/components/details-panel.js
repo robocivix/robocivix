@@ -1,5 +1,3 @@
-import { GameObjects } from 'phaser/dist/phaser.esm.js'
-import { mapState } from '../state/map-state.js'
 
 const ID = 'details-panel'
 

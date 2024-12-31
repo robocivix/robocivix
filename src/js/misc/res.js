@@ -40,10 +40,12 @@ export class Res {
 		}
 	
 		// Create different tile textures
-		createTileTexture('tile-default', 0xD3D3D3)    // Light grey for default
-		createTileTexture('tile-empty', 0x808080)      // Dark grey for empty
+		createTileTexture('tile-default', 0x808080)    // Light grey for default
+		createTileTexture('tile-empty', 0xD3D3D3)      // Dark grey for empty
 		createTileTexture('tile-ore', 0xFFD700)        // Gold color for ore
 		createTileTexture('tile-water', 0x0000FF)     // Blue color for water
+		createTileTexture('tile-stone', 0x555555)     // Blue color for water
+		createTileTexture('tile-crystal', 0x00FFFF)     // Blue color for water
 	}
 
 	createAnimations() {

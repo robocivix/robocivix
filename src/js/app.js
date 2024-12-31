@@ -3,6 +3,7 @@ import { Scene, Game, Scale, AUTO } from '../node_modules/phaser/dist/phaser.esm
 import { PrepareScene } from './scene/prepare.js'
 import { MapViewScene } from './scene/map-view.js'
 import { demoDriver } from './state/demo-driver.js'	 
+import { World } from './core/world.js'
 
 const Phaser = {
 	Scene,

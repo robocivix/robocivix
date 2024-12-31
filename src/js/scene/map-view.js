@@ -7,7 +7,7 @@ import { Res } from '../misc/res.js'
 
 export const TILE_SIZE = 64
 
-class MapViewHelper {
+class CoordinationHelper {
 	constructor(scene) {
 		this.scene = scene
 	}
@@ -208,7 +208,7 @@ class Avatar {
 			sprite.play(name, true)
 		}
 
-		if (this.scene.dragSelection.isInSelectionArea(actor)) {
+		if (this.scene.dragSelection &&this.scene.dragSelection.isInSelectionArea(actor)) {
 			sprite.setTint(0x00ff00)
 		} else {
 			sprite.setTint(0xffffff)
@@ -232,21 +232,19 @@ class Avatar {
 	}
 }
 
-class DragSelection {
+class DragSelection {	// eslint-disable-line no-unused-vars
 	constructor(scene) {
-		this.scene = scene
-		this.dragDiv = null
 		this.selectionArea = null
-	}
-	
-	enable() {
+
+		let dragDiv = null
+		
 		let dragStartX = 0
 		let dragStartY = 0
 
-		this.scene.input.on('pointerdown', (pointer) => {
+		scene.input.on('pointerdown', (pointer) => {
 			if (pointer.leftButtonDown()) {
 				// Get the canvas element's bounding rect
-				const canvas = this.scene.game.canvas
+				const canvas = scene.game.canvas
 				const rect = canvas.getBoundingClientRect()
 
 				// Store initial screen position, adjusted for canvas position
@@ -254,7 +252,7 @@ class DragSelection {
 				dragStartY = pointer.y + rect.top
 
 				// Get or create div element
-				let dragDiv = document.getElementById('drag-selection-div')
+				dragDiv = document.getElementById('drag-selection-div')
 				if (!dragDiv) {
 					dragDiv = document.createElement('div')
 					dragDiv.id = 'drag-selection-div'
@@ -266,16 +264,14 @@ class DragSelection {
 				dragDiv.style.left = dragStartX + 'px'
 				dragDiv.style.top = dragStartY + 'px'
 				document.body.appendChild(dragDiv)
-				this.dragDiv = dragDiv
 			}
 		})
 
-		this.scene.input.on('pointermove', (pointer) => {
-			let dragDiv = this.dragDiv
+		scene.input.on('pointermove', (pointer) => {
 			if (!dragDiv)
 				return
 			// Get canvas position
-			const rect = this.scene.game.canvas.getBoundingClientRect()
+			const rect = scene.game.canvas.getBoundingClientRect()
 			const currentX = pointer.x + rect.left
 			const currentY = pointer.y + rect.top
 
@@ -300,8 +296,8 @@ class DragSelection {
 
 			// Calculate selection area
 			// Convert screen coordinates to world coordinates using helper
-			const topLeft = this.scene.helper.getMapPosition(Math.min(dragStartX, currentX), Math.min(dragStartY, currentY))
-			const bottomRight = this.scene.helper.getMapPosition(Math.max(dragStartX, currentX), Math.max(dragStartY, currentY))
+			const topLeft = scene.coordinationHelper.getMapPosition(Math.min(dragStartX, currentX), Math.min(dragStartY, currentY))
+			const bottomRight = scene.coordinationHelper.getMapPosition(Math.max(dragStartX, currentX), Math.max(dragStartY, currentY))
 
 			// Store selection area in world coordinates
 			this.selectionArea = {
@@ -312,22 +308,14 @@ class DragSelection {
 			}
 		})
 
-		this.scene.input.on('pointerup', (pointer) => {
-			if (this.dragDiv) {
-				this.dragDiv.remove()
-				this.dragDiv = null
+		scene.input.on('pointerup', () => {
+			if (dragDiv) {
+				dragDiv.remove()
+				dragDiv = null
 			}
 			console.log(this.selectionArea)
 			this.selectionArea = null
 		})
-	}
-
-	cancel() {
-		if (this.dragDiv) {
-			this.dragDiv.remove()
-			this.dragDiv = null
-		}
-		this.selectionArea = null
 	}
 
 	isInSelectionArea(actor) {
@@ -342,8 +330,22 @@ class Focus {
 		this.scene = scene
 		this.actor = null
 		this.tweenUpdate = null
+
+		scene.input.on('pointermove', (pointer) => {
+			if (pointer.isDown) {
+				this.remove()
+			}
+		})
+
+		scene.input.on('pointerdown', (pointer) => {
+			if (pointer.gameObject && (pointer.gameObject instanceof GameObjects.Sprite)) {
+				return
+			}
+
+			this.remove()
+		})
 	}
-	
+
 	on(actor) {
 		this.actor = actor
 		let sprite = actor._sprite
@@ -413,34 +415,265 @@ class Focus {
 	}
 }
 
-export class MapViewScene extends Scene
-{
+class Panning {
+	constructor(scene, onUpdate) {
+		let isPanning = false
+
+		const panInfo = { 
+			vx: 0, 
+			vy: 0, 
+			p1: {x: 0, y: 0, time: 0 },
+			p2: {x: 0, y: 0, time: 0 }
+		}
+
+		function updatePanInfo(pointer) {
+			panInfo.p2 = panInfo.p1
+			panInfo.p1 = {
+				x: pointer.x,
+				y: pointer.y,
+				time: new Date().getTime()
+			}
+		}
+
+		scene.input.on('pointerdown', (pointer) => {
+			// For touch devices, treat single touch as panning
+			// For mouse, only right/middle button triggers panning
+			//if (pointer.pointerType === 'touch' || pointer.rightButtonDown() || pointer.middleButtonDown()) {
+			isPanning = true
+			panInfo.vx = 0
+			panInfo.vy = 0
+			panInfo.p1 = {x: pointer.x, y: pointer.y, time: new Date().getTime()}
+			panInfo.p2 = panInfo.p1
+			updatePanInfo(pointer)
+		})
+
+		scene.input.on('pointermove', (pointer) => {
+			if (isPanning) {
+			//if (this.isPanning && (pointer.pointerType === 'touch' || pointer.rightButtonDown() || pointer.middleButtonDown())) {
+				const deltaX = pointer.x - panInfo.p1.x
+				const deltaY = pointer.y - panInfo.p1.y
+				
+				const camera = scene.cameras.main
+				camera.scrollX -= deltaX / camera.zoom
+				camera.scrollY -= deltaY / camera.zoom
+				
+				updatePanInfo(pointer)
+				onUpdate()
+			}
+		})
+
+		scene.input.on('pointerup', pointer => {			
+			if (isPanning) {
+			//if (this.isPanning && (pointer.pointerType === 'touch' || pointer.rightButtonReleased() || pointer.middleButtonReleased())) {
+				isPanning = false
+				
+				// Calculate final velocity based on total movement
+				const now = new Date().getTime()
+				const deltaTime = (now - panInfo.p2.time) / 1000
+				const deltaX = pointer.x - panInfo.p2.x
+				const deltaY = pointer.y - panInfo.p2.y
+				
+				const camera = scene.cameras.main
+				panInfo.vx = (deltaX / camera.zoom) / deltaTime
+				panInfo.vy = (deltaY / camera.zoom) / deltaTime
+
+				// Start decay animation only if there was significant movement speed
+				const velocityMagnitude = Math.sqrt(
+					Math.pow(panInfo.vx, 2) + 
+					Math.pow(panInfo.vy, 2)
+				)
+
+				if (velocityMagnitude > 100) { // Units per second threshold
+					const decayDuration = 500
+					const startVelocity = { vx: panInfo.vx, vy: panInfo.vy }
+					
+					let startTime = null
+					const animate = (timestamp) => {
+						if (!startTime) startTime = timestamp
+						const progress = (timestamp - startTime) / decayDuration
+						
+						if (progress < 1) {
+							const easeOut = 1 - Math.pow(1 - progress, 2)
+							const timeScale = 1/60 // Convert to roughly 60 FPS time steps
+							
+							panInfo.vx = startVelocity.vx * (1 - easeOut)
+							panInfo.vy = startVelocity.vy * (1 - easeOut)
+							
+							const camera = scene.cameras.main
+							camera.scrollX -= panInfo.vx * timeScale
+							camera.scrollY -= panInfo.vy * timeScale
+							
+							onUpdate()
+							requestAnimationFrame(animate)
+						} else {
+							onUpdate()
+						}
+					}
+					
+					requestAnimationFrame(animate)
+				} else {
+					onUpdate()
+				}
+			}
+		})
+	}
+}
+
+class Zooming {
+	constructor(scene, onUpdate) {
+		this.scene = scene
+		this.onUpdate = onUpdate
+
+		this.handleMouseZoom()
+		this.handlePinchZoom()
+	}
+
+	handleMouseZoom() {
+		// Handle mouse wheel zoom
+		this.scene.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {	// eslint-disable-line no-unused-vars
+			this.handleZoom(pointer, deltaY > 0 ? -0.1 : 0.1)
+		})
+	}
+
+	handlePinchZoom() {
+		// Handle pinch zoom on touch devices
+		let startDistance = 0
+		let lastScale = 1
+
+		this.scene.input.on('touchstart', (pointer) => {
+			this.debugOverlay.message("touchstart", "touches: " + pointer.touches?.length)
+			
+			if (pointer.touches?.length === 2) {
+				const touch1 = pointer.touches[0]
+				const touch2 = pointer.touches[1]
+				
+				// Use pointer coordinates directly from Phaser's touch objects
+				startDistance = Math.hypot(
+					touch1.pageX - touch2.pageX,
+					touch1.pageY - touch2.pageY
+				)
+				lastScale = 1
+			}
+		})
+
+		// Listen for touchmove to handle zoom
+		this.scene.input.on('touchmove', (pointer) => {
+			this.scene.debugOverlay.message("touchmove p2", pointer.x + ", " + pointer.y)
+			
+			if (pointer.touches?.length === 2) {
+				pointer.event.preventDefault() // Prevent default browser pinch zoom
+
+				const touch1 = pointer.touches[0]
+				const touch2 = pointer.touches[1]
+
+				const currentDistance = Math.hypot(
+					touch1.pageX - touch2.pageX,
+					touch1.pageY - touch2.pageY
+				)
+
+				if (startDistance > 0) {
+					const scale = currentDistance / startDistance
+					const deltaScale = scale - lastScale
+					const zoomDelta = deltaScale * 0.5 // Adjust sensitivity
+
+					// Calculate midpoint between touches using Phaser coordinates
+					const midX = (touch1.x + touch2.x) / 2
+					const midY = (touch1.y + touch2.y) / 2
+					const zoomPoint = {x: midX, y: midY}
+
+					this.handleZoom(zoomPoint, zoomDelta)
+					lastScale = scale
+				}
+			}
+		})
+
+		// Reset on touch end
+		this.scene.input.on('touchend', () => {
+			this.scene.debugOverlay.message("touchend", "reset zoom state")
+			startDistance = 0
+			lastScale = 1
+		})
+	}
+
+	handleZoom(pointer, zoomDelta) {
+		const camera = this.scene.cameras.main
+		const currentZoom = camera.zoom
+		
+		// Define available zoom levels
+		const zoomLevels = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5]
+		
+		// Find current zoom level index
+		let currentIndex = zoomLevels.findIndex(zoom => Math.abs(zoom - currentZoom) < 0.01)
+		if (currentIndex === -1) {
+			currentIndex = zoomLevels.findIndex(zoom => zoom > currentZoom) - 1
+			if (currentIndex === -2) currentIndex = zoomLevels.length - 1
+		}
+		
+		// Determine next zoom level based on zoom direction
+		let nextIndex
+		if (zoomDelta > 0) {
+			// Zooming in
+			nextIndex = Math.min(currentIndex + 1, zoomLevels.length - 1)
+		} else {
+			// Zooming out
+			nextIndex = Math.max(currentIndex - 1, 0)
+		}
+		
+		// Get pointer position in world space before zoom
+		const worldPoint = camera.getWorldPoint(pointer.x, pointer.y)
+		
+		// Set new zoom level
+		camera.zoom = zoomLevels[nextIndex]
+		
+		// Force camera to update its internal values
+		camera.preRender()
+		
+		// Adjust camera position to zoom toward pointer position
+		const newWorldPoint = camera.getWorldPoint(pointer.x, pointer.y)
+		camera.scrollX += worldPoint.x - newWorldPoint.x
+		camera.scrollY += worldPoint.y - newWorldPoint.y
+
+		// Force another update before getting chunks
+		camera.preRender()
+		
+		this.onUpdate()
+	}	
+}
+
+export class MapViewScene extends Scene {
 	constructor() {
 		super('MapViewScene')
-		this.res = new Res(this)
 		this.config = {
 			drawChunkBoundaries: true,
 			drawDebugOverlay: true
 		}
-		this.helper = new MapViewHelper(this)
-		this.avatar = new Avatar(this)
-		this.focus = new Focus(this)
-		this.detailsPanel = new DetailsPanel(this)
-		this.dragSelection = new DragSelection(this)
 	}
 
 	preload () {
+		this.res = new Res(this)
 		this.res.preloadSprites()
 		this.res.prepareTextures(TILE_SIZE)
 	}
 
-	create () {		
-		this.renderMap()
-		this.enablePanning()
-		this.enableZoom()
+	create () {
 		this.res.createAnimations()
-		this.enableClickHandler()
-		//this.dragSelection.enable()
+		this.disableContextMenu()
+		this.coordinationHelper = new CoordinationHelper(this)
+		this.avatar = new Avatar(this)
+		this.detailsPanel = new DetailsPanel(this)
+		//this.dragSelection = new DragSelection(this)		
+		this.focus = new Focus(this)
+
+		const onCameraUpdate = () => {
+			this.updateVisibleChunks()
+			if (this.debugOverlay) {
+				this.debugOverlay.update()
+			}
+		}
+		this.panning = new Panning(this, onCameraUpdate)
+		this.zooming = new Zooming(this, onCameraUpdate)
+
+		
 		mapState.subscribeToAdd(this.onActorUpdate.bind(this))
 		mapState.subscribeToUpdate(this.onActorUpdate.bind(this))
 		mapState.subscribeToDelete(this.onActorDelete.bind(this))
@@ -449,14 +682,29 @@ export class MapViewScene extends Scene
 			this.debugOverlay = new DebugOverlay(this)
 			this.debugOverlay.init()
 		}
+
+		this.cameras.main.setBounds(mapState.bounds.x, mapState.bounds.y, mapState.bounds.w * TILE_SIZE, mapState.bounds.h * TILE_SIZE)
+		this.updateVisibleChunks()
+
+		var IS_TOUCH	= false
+		window.addEventListener('touchstart', function()
+		{			
+			IS_TOUCH	= true
+			this.debugOverlay.message("touchstart", "IS_TOUCH: " + IS_TOUCH)
+		})
 	}
 
+	disableContextMenu() {
+		this.game.canvas.addEventListener('contextmenu', (e) => {
+			e.preventDefault()
+		})
+	}
 
 	updateVisibleChunks() {
 		// Get viewport dimensions in world coordinates
 		const bufferMargin = Math.floor(CHUNK_SIZE / 2)
 		//const bufferMargin = 0
-		const view = this.helper.getViewWorldPosition()
+		const view = this.coordinationHelper.getViewWorldPosition()
 		view.left -= bufferMargin
 		view.top -= bufferMargin
 		view.right += bufferMargin
@@ -473,7 +721,7 @@ export class MapViewScene extends Scene
 		if (update.added.length > 0) {
 			console.log("add chunks", update.added.map(x => x.key()))
 			for (const chunk of update.added) {
-				this.createChunkView(chunk)
+				this.drawChunkView(chunk)
 			}
 		}
 
@@ -493,13 +741,14 @@ export class MapViewScene extends Scene
 			chunk.groundImages = null
 		}
 	}
-	createChunkView(chunk) {
+
+	drawChunkView(chunk) {
 		// Draw the ground tiles for this chunk using pre-created tile textures
 		if (chunk.groundLayer) {
 			if (chunk.groundImages) {
 				throw new Error('chunk.groundImages already exists')
 			}
-			console.log("createChunkView", chunk.key())
+			console.log("drawChunkView", chunk.key())
 			
 			chunk.groundImages = []
 			
@@ -552,234 +801,6 @@ export class MapViewScene extends Scene
 			this.onActorUpdate(actor)
 		}
 	}
-
-	renderMap() {
-		this.cameras.main.setBounds(mapState.bounds.x, mapState.bounds.y, mapState.bounds.w * TILE_SIZE, mapState.bounds.h * TILE_SIZE)
-		this.updateVisibleChunks()
-	}
-
-	enablePanning() {
-		// Add this event listener to prevent context menu
-		this.game.canvas.addEventListener('contextmenu', (e) => {
-			e.preventDefault()
-		})
-		
-		const panInfo = { 
-			vx: 0, 
-			vy: 0, 
-			p1: {x: 0, y: 0, time: 0 },
-			p2: {x: 0, y: 0, time: 0 }
-		}
-
-		function updatePanInfo(pointer) {
-			panInfo.p2 = panInfo.p1
-			panInfo.p1 = {
-				x: pointer.x,
-				y: pointer.y,
-				time: new Date().getTime()
-			}
-		}
-
-		this.isPanning = false
-
-		this.input.on('pointerdown', (pointer) => {
-			// For touch devices, treat single touch as panning
-			// For mouse, only right/middle button triggers panning
-			//if (pointer.pointerType === 'touch' || pointer.rightButtonDown() || pointer.middleButtonDown()) {
-				this.isPanning = true
-				panInfo.vx = 0
-				panInfo.vy = 0
-				panInfo.p1 = {x: pointer.x, y: pointer.y, time: new Date().getTime()}
-				panInfo.p2 = panInfo.p1
-				updatePanInfo(pointer)
-			//}
-		})
-
-		this.input.on('pointermove', (pointer) => {
-			if (this.isPanning) {
-			//if (this.isPanning && (pointer.pointerType === 'touch' || pointer.rightButtonDown() || pointer.middleButtonDown())) {
-				const deltaX = pointer.x - panInfo.p1.x
-				const deltaY = pointer.y - panInfo.p1.y
-				
-				const camera = this.cameras.main
-				camera.scrollX -= deltaX / camera.zoom
-				camera.scrollY -= deltaY / camera.zoom
-				
-				updatePanInfo(pointer)
-				this.updateVisibleChunks()
-			}
-		})
-
-		this.input.on('pointerup', pointer => {			
-			if (this.isPanning) {
-			//if (this.isPanning && (pointer.pointerType === 'touch' || pointer.rightButtonReleased() || pointer.middleButtonReleased())) {
-				this.isPanning = false
-				
-				// Calculate final velocity based on total movement
-				const now = new Date().getTime()
-				const deltaTime = (now - panInfo.p2.time) / 1000
-				const deltaX = pointer.x - panInfo.p2.x
-				const deltaY = pointer.y - panInfo.p2.y
-				
-				const camera = this.cameras.main
-				panInfo.vx = (deltaX / camera.zoom) / deltaTime
-				panInfo.vy = (deltaY / camera.zoom) / deltaTime
-
-				this.updateVisibleChunks()
-
-				// Start decay animation only if there was significant movement speed
-				const velocityMagnitude = Math.sqrt(
-					Math.pow(panInfo.vx, 2) + 
-					Math.pow(panInfo.vy, 2)
-				)
-
-				if (velocityMagnitude > 100) { // Units per second threshold
-					const decayDuration = 500
-					const startVelocity = { vx: panInfo.vx, vy: panInfo.vy }
-					
-					let startTime = null
-					const animate = (timestamp) => {
-						if (!startTime) startTime = timestamp
-						const progress = (timestamp - startTime) / decayDuration
-						
-						if (progress < 1) {
-							const easeOut = 1 - Math.pow(1 - progress, 2)
-							const timeScale = 1/60 // Convert to roughly 60 FPS time steps
-							
-							panInfo.vx = startVelocity.vx * (1 - easeOut)
-							panInfo.vy = startVelocity.vy * (1 - easeOut)
-							
-							const camera = this.cameras.main
-							camera.scrollX -= panInfo.vx * timeScale
-							camera.scrollY -= panInfo.vy * timeScale
-							
-							this.updateVisibleChunks()
-							requestAnimationFrame(animate)
-						} else {
-							this.updateVisibleChunks()
-							if (this.debugOverlay) {
-								this.debugOverlay.update()
-							}
-						}
-					}
-					
-					requestAnimationFrame(animate)
-				}
-			}
-		})
-	}
-
-	enableZoom() {
-		// Handle mouse wheel zoom
-		this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {	// eslint-disable-line no-unused-vars
-			this.handleZoom(pointer, deltaY > 0 ? -0.1 : 0.1)
-		})
-
-		// Handle pinch zoom on touch devices
-		let startDistance = 0
-		let lastScale = 1
-
-		// Listen for touchstart to initialize gesture
-		this.input.on('touchstart', (e) => {
-			if (e.touches.length === 2) {
-				startDistance = Math.hypot(
-					e.touches[0].clientX - e.touches[1].clientX,
-					e.touches[0].clientY - e.touches[1].clientY
-				)
-				lastScale = 1
-			}
-		})
-
-		// Listen for touchmove to handle zoom
-		this.input.on('touchmove', (e) => {
-			if (e.touches.length === 2) {
-				e.preventDefault() // Prevent default browser pinch zoom
-
-				const currentDistance = Math.hypot(
-					e.touches[0].clientX - e.touches[1].clientX, 
-					e.touches[0].clientY - e.touches[1].clientY
-				)
-
-				if (startDistance > 0) {
-					const scale = currentDistance / startDistance
-					const deltaScale = scale - lastScale
-					const zoomDelta = deltaScale * 0.5 // Adjust sensitivity
-
-					// Calculate midpoint between touches
-					const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2
-					const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2
-					const zoomPoint = {x: midX, y: midY}
-
-					this.handleZoom(zoomPoint, zoomDelta)
-					lastScale = scale
-				}
-			}
-		})
-
-		// Reset on touch end
-		this.input.on('touchend', () => {
-			startDistance = 0
-			lastScale = 1
-		})
-	}
-
-	handleZoom(pointer, zoomDelta) {
-		const camera = this.cameras.main
-		const currentZoom = camera.zoom
-		
-		// Define available zoom levels
-		const zoomLevels = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5]
-		
-		// Find current zoom level index
-		let currentIndex = zoomLevels.findIndex(zoom => Math.abs(zoom - currentZoom) < 0.01)
-		if (currentIndex === -1) {
-			currentIndex = zoomLevels.findIndex(zoom => zoom > currentZoom) - 1
-			if (currentIndex === -2) currentIndex = zoomLevels.length - 1
-		}
-		
-		// Determine next zoom level based on zoom direction
-		let nextIndex
-		if (zoomDelta > 0) {
-			// Zooming in
-			nextIndex = Math.min(currentIndex + 1, zoomLevels.length - 1)
-		} else {
-			// Zooming out
-			nextIndex = Math.max(currentIndex - 1, 0)
-		}
-		
-		// Get pointer position in world space before zoom
-		const worldPoint = camera.getWorldPoint(pointer.x, pointer.y)
-		
-		// Set new zoom level
-		camera.zoom = zoomLevels[nextIndex]
-		
-		// Adjust camera position to zoom toward pointer position
-		const newWorldPoint = camera.getWorldPoint(pointer.x, pointer.y)
-		camera.scrollX += worldPoint.x - newWorldPoint.x
-		camera.scrollY += worldPoint.y - newWorldPoint.y
-
-		this.updateVisibleChunks()
-	}
-
-	enableClickHandler() {
-		this.input.on('pointerdown', (pointer) => {
-			if (pointer.leftButtonDown()) {
-				// Only log if click wasn't on a sprite (which would trigger sprite's own handler)
-				if (!pointer.gameObject || !(pointer.gameObject instanceof GameObjects.Sprite)) {
-					this.focus.remove()
-				}
-			}
-
-			if (pointer.rightButtonDown()) {
-				this.focus.remove()
-			}
-
-			if (pointer.middleButtonDown()) {
-				this.focus.remove()
-			}
-		})
-	}
-
 	
 	onActorUpdate(actor) {
 		this.avatar.draw(actor)
