@@ -73,8 +73,6 @@ class DemoDriver {
 	}
 
 	init() {
-
-
 		setTimeout(() => {
 			//this.createStatic()
 			this.createMovingStopped()
