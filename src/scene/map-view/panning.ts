@@ -8,12 +8,12 @@ interface PanInfo {
 }
 
 export class Panning {
-	private scene: Phaser.Scene
-	private onUpdate: () => void
+	#scene: Phaser.Scene
+	#onUpdate: () => void
 
 	constructor(scene: Phaser.Scene, onUpdate: () => void) {
-		this.scene = scene
-		this.onUpdate = onUpdate
+		this.#scene = scene
+		this.#onUpdate = onUpdate
 	}
 
 	init(): void {
@@ -35,34 +35,34 @@ export class Panning {
 			}
 		}
 
-		this.scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+		this.#scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
             
-			if (pointer.rightButtonDown() || pointer.middleButtonDown()) {
-				isPanning = true
-				panInfo.vx = 0
-				panInfo.vy = 0
-				panInfo.p1 = {x: pointer.x, y: pointer.y, time: new Date().getTime()}
-				panInfo.p2 = panInfo.p1
-				updatePanInfo(pointer)
-			}
+			// if (pointer.rightButtonDown() || pointer.middleButtonDown()) {
+			isPanning = true
+			panInfo.vx = 0
+			panInfo.vy = 0
+			panInfo.p1 = {x: pointer.x, y: pointer.y, time: new Date().getTime()}
+			panInfo.p2 = panInfo.p1
+			updatePanInfo(pointer)
+			// }
 		})
 
-		this.scene.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+		this.#scene.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
 			if (isPanning) {
 			//if (this.isPanning && (pointer.pointerType === 'touch' || pointer.rightButtonDown() || pointer.middleButtonDown())) {
 				const deltaX = pointer.x - panInfo.p1.x
 				const deltaY = pointer.y - panInfo.p1.y
 				
-				const camera = this.scene.cameras.main
+				const camera = this.#scene.cameras.main
 				camera.scrollX -= deltaX / camera.zoom
 				camera.scrollY -= deltaY / camera.zoom
 				
 				updatePanInfo(pointer)
-				this.onUpdate()
+				this.#onUpdate()
 			}
 		})
 
-		this.scene.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {			
+		this.#scene.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {			
 			if (isPanning) {
 			//if (this.isPanning && (pointer.pointerType === 'touch' || pointer.rightButtonReleased() || pointer.middleButtonReleased())) {
 				isPanning = false
@@ -73,7 +73,7 @@ export class Panning {
 				const deltaX = pointer.x - panInfo.p2.x
 				const deltaY = pointer.y - panInfo.p2.y
 				
-				const camera = this.scene.cameras.main
+				const camera = this.#scene.cameras.main
 				panInfo.vx = (deltaX / camera.zoom) / deltaTime
 				panInfo.vy = (deltaY / camera.zoom) / deltaTime
 
@@ -99,20 +99,20 @@ export class Panning {
 							panInfo.vx = startVelocity.vx * (1 - easeOut)
 							panInfo.vy = startVelocity.vy * (1 - easeOut)
 							
-							const camera = this.scene.cameras.main
+							const camera = this.#scene.cameras.main
 							camera.scrollX -= panInfo.vx * timeScale
 							camera.scrollY -= panInfo.vy * timeScale
 							
-							this.onUpdate()
+							this.#onUpdate()
 							requestAnimationFrame(animate)
 						} else {
-							this.onUpdate()
+							this.#onUpdate()
 						}
 					}
 					
 					requestAnimationFrame(animate)
 				} else {
-					this.onUpdate()
+					this.#onUpdate()
 				}
 			}
 		})

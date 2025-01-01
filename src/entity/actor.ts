@@ -16,7 +16,7 @@ interface MoveState {
 interface Future {
     promise: Promise<Actor>
     resolve: (actor: Actor) => void
-    cancel: (reason?: any) => void
+    cancel: () => void
     timer?: NodeJS.Timeout
 }
 
@@ -26,82 +26,49 @@ interface Action {
     end: number
 }
 
-function calculateMoveStep(actor: Actor): MoveStep | undefined {
-	const move = actor._move
-	if (!move || move.path.length === 0)
-		return
-        
-	const targetX = move.path[0]
-	const targetY = move.path[1]
-	const currentX = actor.x
-	const currentY = actor.y
-
-	if (targetX === currentX && targetY === currentY) {
-		move.path = move.path.slice(2)
-		return calculateMoveStep(actor)
-	}
-
-	const stepX = targetX > currentX ? currentX + 1 : (targetX < currentX ? currentX - 1 : currentX) 
-	const stepY = targetY > currentY ? currentY + 1 : (targetY < currentY ? currentY - 1 : currentY) 
-	const d = stepX !== currentX && stepY !== currentY ? Math.SQRT2 : 1
-
-	return move.step = {
-		duration: (d * 1000 / move.speed) | 0,
-		x: stepX,
-		y: stepY
-	}
+export class WalkConfig {
+	adjacent: boolean = true
+	cancel: boolean = true
+	speed: number = 1
 }
+const DEFAULT_WALK_CONFIG = new WalkConfig()
 
-function startAction(actor: Actor, impl: (resolve: (actor: Actor) => void, future: Future) => void): Promise<Actor> {
-	if (actor._future) {
-		const msg = "Error creating action: Already doing something"
-		console.error(msg, actor)
-		throw msg
-	}
-
-	const future: Future = {
-		promise: undefined!,
-		resolve: undefined!,
-		cancel: undefined!
-	}
-    
-	future.promise = new Promise((resolve, _reject) => {
-		future.resolve = resolve
-		impl(resolve, future)
-	})
-    
-	future.cancel = () => {
-		if (future.timer) clearTimeout(future.timer)
-		actor._future = undefined
-		future.resolve(actor)
-		actor._move = undefined
-		actor._onUpdate(actor)
-	}
-    
-	actor._future = future
-	actor._onUpdate(actor)
-	return future.promise
-}
-
-export class Actor {
-	id: string
+export interface IActor {
+	id?: string
+	readonly type: string
 	name: string
 	x: number
 	y: number
 	action?: Action
-	_onUpdate: (actor: Actor) => void
-	_onMove: (actor: Actor, toX: number, toY: number) => void
+	_move?: MoveState
+
+	work(name: string, duration: number): Promise<Actor>
+	walk(targetX: number, targetY: number, config?: WalkConfig): Promise<Actor>
+	move(path: number[], speed?: number): Promise<Actor>
+	cancel(): void
+}
+
+
+export class Actor implements IActor {
+	id?: string
+	readonly type: string
+	name: string
+	x: number
+	y: number
+	action?: Action
+	#onUpdate: (actor: Actor) => void
+	#onMove: (actor: Actor, toX: number, toY: number) => void
 	_move?: MoveState
 	_future?: Future
 
-	constructor(id: string, name: string, x: number, y: number, onUpdate: (actor: Actor) => void, onMove: (actor: Actor, toX: number, toY: number) => void) {
-		this.id = id
+	constructor(type: string, name: string, x: number, y: number, onUpdate: (actor: Actor) => void, onMove: (actor: Actor, toX: number, toY: number) => void) {
+		this.type = type
 		this.name = name
 		this.x = x
 		this.y = y
 		this.action = undefined
-		this._onUpdate = onUpdate
-		this._onMove = onMove
+		this.#onUpdate = onUpdate
+		this.#onMove = onMove
 		this._move = undefined
 		this._future = undefined
 	}
@@ -115,30 +82,35 @@ export class Actor {
 		}
 		this.action = action
 		const actor = this
-		return startAction(this, (resolve, future) => {
+		return this.#startAction((resolve, future) => {
 			future.timer = setTimeout(() => {
 				actor._future = undefined
 				resolve(actor)
 				actor.action = undefined
-				actor._onUpdate(actor)
+				actor.#onUpdate(actor)
 			}, duration)
 		})
 	}
 
-	walk(targetX: number, targetY: number, adjacent: boolean = true, cancel: boolean = true,speed = 1): Promise<Actor> {
+	walk(targetX: number, targetY: number, config?: WalkConfig): Promise<Actor> {
 		let path: number[] | null = null
-		if (adjacent) {
-			path = world.map.pathfinder.findPathToAdjacent(this.x, this.y, targetX, targetY)
+		const walkConfig = config ?? DEFAULT_WALK_CONFIG
+		if (walkConfig.adjacent) {
+			path = world.grid.pathfinder.findPathToAdjacent(this.x, this.y, targetX, targetY)
 		} else {
-			path = world.map.pathfinder.findPathToAdjacent(this.x, this.y, targetX, targetY)
+			path = world.grid.pathfinder.findPath(this.x, this.y, targetX, targetY)
 		}
-		if (!path)
-			return Promise.reject(`No path found from (${this.x},${this.y}) to (${targetX},${targetY})`)
+		if (!path) {
+			const msg = `No path found from (${this.x},${this.y}) to (${targetX},${targetY})`
+			console.warn(msg, this)
+			//return Promise.reject()
+			return Promise.resolve(this)
+		}
 
-		if (cancel) {
+		if (walkConfig.cancel) {
 			this.cancel()
 		}
-		return this.move(path, speed)
+		return this.move(path, walkConfig.speed)
 	}
 
 	move(path: number[], speed = 1): Promise<Actor> {
@@ -148,23 +120,23 @@ export class Actor {
 			lastUpdate: new Date().getTime()
 		}
 
-		const step = calculateMoveStep(this)
+		const step = this.#calculateMoveStep()
 		if (!step)
 			return Promise.resolve(this)
 
 		const actor = this
-		return startAction(this, (resolve, future) => {
+		return this.#startAction((resolve, future) => {
 			function onStepComplete() {
 				if (!actor._move)
 					return
 				const nextX = actor._move.step!.x
 				const nextY = actor._move.step!.y
-				actor._onMove(actor, nextX, nextY)
+				actor.#onMove(actor, nextX, nextY)
 				if (actor.x !== nextX || actor.y !== nextY) {
-					throw Error(`Actor moved to (${nextX},${nextY}) but was at (${actor.x},${actor.y}). Something broken, the actor xy is supposed to be updated by the _onMove callback.`)
+					throw Error(`Actor moved to (${nextX},${nextY}) but was at (${actor.x},${actor.y}). Something broken, the actor xy is supposed to be updated by the #onMove callback.`)
 				}
 
-				const newStep = calculateMoveStep(actor)
+				const newStep = actor.#calculateMoveStep()
 				if (newStep) {
 					actor._move.lastUpdate = new Date().getTime()
 					future.timer = setTimeout(onStepComplete, newStep.duration)
@@ -175,7 +147,7 @@ export class Actor {
 					actor._move = undefined
 				}
 
-				actor._onUpdate(actor)
+				actor.#onUpdate(actor)
 			}
 			future.timer = setTimeout(onStepComplete, step.duration)
 		})
@@ -184,6 +156,64 @@ export class Actor {
 	cancel(): void {
 		if (this._future) {
 			this._future.cancel()
+		}
+	}
+
+	
+	#startAction(impl: (resolve: (actor: Actor) => void, future: Future) => void): Promise<Actor> {
+		if (this._future) {
+			const msg = "Error creating action: Already doing something"
+			console.error(msg, this)
+			throw msg
+		}
+
+		const future: Future = {
+			promise: undefined!,
+			resolve: undefined!,
+			cancel: undefined!
+		}
+		
+		future.promise = new Promise((resolve, _reject) => {
+			future.resolve = resolve
+			impl(resolve, future)
+		})
+		
+		future.cancel = () => {
+			if (future.timer) clearTimeout(future.timer)
+			this._future = undefined
+			future.resolve(this)
+			this._move = undefined
+			this.#onUpdate(this)
+		}
+		
+		this._future = future
+		this.#onUpdate(this)
+		return future.promise
+	}
+	
+	#calculateMoveStep(): MoveStep | undefined {
+		const move = this._move
+		if (!move || move.path.length === 0)
+			return
+			
+		const targetX = move.path[0]
+		const targetY = move.path[1]
+		const currentX = this.x
+		const currentY = this.y
+
+		if (targetX === currentX && targetY === currentY) {
+			move.path = move.path.slice(2)
+			return this.#calculateMoveStep()
+		}
+
+		const stepX = targetX > currentX ? currentX + 1 : (targetX < currentX ? currentX - 1 : currentX) 
+		const stepY = targetY > currentY ? currentY + 1 : (targetY < currentY ? currentY - 1 : currentY) 
+		const d = stepX !== currentX && stepY !== currentY ? Math.SQRT2 : 1
+
+		return move.step = {
+			duration: (d * 1000 / move.speed) | 0,
+			x: stepX,
+			y: stepY
 		}
 	}
 }

@@ -1,5 +1,5 @@
-import { LayeredMap } from "./layered-map"
-import { Machine } from "../entity/machine"
+import { LayeredGrid } from "./layered-grid"
+import { Building } from "../entity/building"
 function randChoice<T>(array: readonly T[]): T {
 	return array[Math.floor(Math.random() * array.length)]
 }
@@ -20,8 +20,8 @@ export const GeneratorConfigs = {
 	}
 }
 
-export function randomMap(width: number, height: number, config: MapConfig = {}): LayeredMap {
-	const layeredMap = new LayeredMap(width, height)
+export function randomMap(width: number, height: number, config: MapConfig = {}): LayeredGrid {
+	const layeredMap = new LayeredGrid(width, height)
 	
 	const types = ["ore", "water", "crystal"]
 	const actualConfig = {...GeneratorConfigs.DEFAULT, ...config}
@@ -44,7 +44,7 @@ export function randomMap(width: number, height: number, config: MapConfig = {})
 }
 
 
-const charToMachineType: Record<string, string>  = {
+const charToBuildingType: Record<string, string>  = {
 	"C": "crusher",
 	"P": "power-station",
 }
@@ -54,7 +54,7 @@ const charToResourceType: Record<string, string> = {
 	"c": "crystal",
 }
 
-export function fromText(text: string): LayeredMap {
+export function fromText(text: string): LayeredGrid {
 	const originalLines = text.split("\n")
 	const lines: string[] = []
 	let width = -1
@@ -92,9 +92,9 @@ export function fromText(text: string): LayeredMap {
 					layeredMap.resources.set(x, y, resourceType)
 					break
 				}
-				const machineType = charToMachineType[char]
+				const machineType = charToBuildingType[char]
 				if (machineType) {
-					layeredMap.machines.set(x, y, new Machine(machineType))
+					layeredMap.buildings.add(new Building(machineType, x, y))
 				}
 			}
 		}

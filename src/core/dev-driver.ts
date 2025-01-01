@@ -1,6 +1,9 @@
 
 import { Actor } from "../entity/actor"
 import { world } from "./world"
+import { fromText } from "../grid/generator"
+import { LayeredGrid } from "../grid/layered-grid"
+import { ActorGridEvents } from "../grid/actor-grid"
 
 function rand(n: number): number {
 	return Math.random() * n | 0
@@ -11,17 +14,17 @@ function randBool(): boolean {
 }
 
 function onActorUpdate(actor: Actor): void {
-	world.map.actors.triggerUpdate(actor)
+	world.grid.actors.events().emit(ActorGridEvents.update, actor)
 }
 
 function onActorMove(actor: Actor, toX: number, toY: number): void {
-	world.map.actors.move(actor, toX, toY, false)
+	world.grid.actors.move(actor, toX, toY, false)
 }
 
 class ActorDefault extends Actor {
-	constructor(id: string, x: number, y: number) {
-		super(id, id, x, y, onActorUpdate, onActorMove)
-		world.map.actors.add(this)
+	constructor(name: string, x: number, y: number) {
+		super("robot1", name, x, y, onActorUpdate, onActorMove)
+		world.grid.actors.add(this)
 	}
 }
 
@@ -78,12 +81,12 @@ export function createMovingDestroyed(): void {
 	a.move([10, 7])
 	setTimeout(() => {
 		a.cancel()
-		world.map.actors.remove(a)
+		world.grid.actors.remove(a)
 	}, 2000)			
 }
 
 export function createFindPath(): void {
-	const a = new ActorDefault("r-find-path", 6, 6)	
+	const a = new ActorDefault("find-path", 6, 6)	
 	onActorUpdate(a)
 
 	// const path = world.map.pathfinder.findPathToAdjacent(a.x, a.y, 12, 2)
@@ -98,7 +101,7 @@ export function devInit(): void {
 		// createStatic()
 		// createMovingStopped()
 		// createMovingDestroyed()
-		// //createRandom(10000)
+		createRandom(10000)
 		//createRectangle()
 		// //createBackAndForth()
 
@@ -171,4 +174,35 @@ export function randBehavior(actor: Actor): void {
 	}
 
 	promise.then(() => setTimeout(() => randBehavior(actor), 0))
+}
+
+
+export function starterMap1(): LayeredGrid {
+	return fromText(`
+		................................................
+		................................................
+		....s.......P...................................
+		...Cs...........................................
+		....sssssssssss.................................
+		.......s..o.....................................
+		.......s....o...................................
+		................................................
+		...wwwww........................................
+		...wwwww........................................
+		....c...........................................
+		................................................
+		................................................
+		................................................
+		................................................
+		................................................
+		................................................
+		................................................
+		................................................
+		................................................
+		................................................
+		................................................
+		................................................
+		................................................
+		................................................
+	`)
 }

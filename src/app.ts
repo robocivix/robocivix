@@ -1,16 +1,15 @@
-// app.ts
-import { Game, Scale, AUTO } from "phaser"
+import Phaser from "phaser"
 import { PrepareScene } from "./scene/prepare"
 import { MapViewScene } from "./scene/map-view/map-view"
 
 
-const game: Game = new Game({
-	type: AUTO,
+const _game: Phaser.Game = new Phaser.Game({
+	type: Phaser.AUTO,
 	width: window.innerWidth,
 	height: window.innerHeight,
 	scene: [PrepareScene, MapViewScene],
 	scale: {
-		mode: Scale.RESIZE,
-		autoCenter: Scale.CENTER_BOTH
+		mode: Phaser.Scale.RESIZE,
+		autoCenter: Phaser.Scale.CENTER_BOTH
 	}
 })

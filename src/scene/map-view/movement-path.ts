@@ -3,10 +3,10 @@ import { ActorUI } from "./actor-ui"
 import { TILE_SIZE } from "./res"
 
 export class MovementPath {
-	private scene: Scene
+	#scene: Scene
 
 	constructor(scene: Scene) {
-		this.scene = scene
+		this.#scene = scene
 	}
 
 	draw(actor: ActorUI): void {
@@ -15,7 +15,7 @@ export class MovementPath {
 
 		if (actor._move && actor._move.path.length >= 2) {
 			// Create graphics object for path
-			const pathGraphics = this.scene.add.graphics()
+			const pathGraphics = this.#scene.add.graphics()
 			actor._pathGraphics = pathGraphics
 			pathGraphics.setDepth(-1) // Set depth below sprites
 			pathGraphics.lineStyle(2, 0x00ff00, 0.5) // Green line, 50% opacity

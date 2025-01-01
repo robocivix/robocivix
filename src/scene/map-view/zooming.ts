@@ -7,27 +7,27 @@ interface ZoomingScene extends Phaser.Scene {
 }
 
 export class Zooming {
-	private scene: ZoomingScene
-	private onUpdate: () => void
+	#scene: ZoomingScene
+	#onUpdate: () => void
 
 	constructor(scene: ZoomingScene, onUpdate: () => void) {
-		this.scene = scene
-		this.onUpdate = onUpdate
+		this.#scene = scene
+		this.#onUpdate = onUpdate
 	}
 
 	init(): void {
-		this.handleMouseZoom()
-		this.handlePinchZoom()
+		this.#handleMouseZoom()
+		this.#handlePinchZoom()
 	}
 
-	private handleMouseZoom(): void {
+	#handleMouseZoom(): void {
 		// Handle mouse wheel zoom
-		this.scene.input.on("wheel", (pointer: Phaser.Input.Pointer, _gameObjects: any, _deltaX: number, deltaY: number, _deltaZ: number) => {
-			this.handleZoom(pointer, deltaY > 0 ? -0.1 : 0.1)
+		this.#scene.input.on("wheel", (pointer: Phaser.Input.Pointer, _gameObjects: any, _deltaX: number, deltaY: number, _deltaZ: number) => {
+			this.#handleZoom(pointer, deltaY > 0 ? -0.1 : 0.1)
 		})
 	}
 
-	private handlePinchZoom(): void {
+	#handlePinchZoom(): void {
 		// Handle pinch zoom on touch devices
 		// let startDistance = 0
 		// let lastScale = 1
@@ -87,8 +87,8 @@ export class Zooming {
 		// })
 	}
 
-	private handleZoom(pointer: {x: number, y: number}, zoomDelta: number): void {
-		const camera = this.scene.cameras.main
+	#handleZoom(pointer: {x: number, y: number}, zoomDelta: number): void {
+		const camera = this.#scene.cameras.main
 		const currentZoom = camera.zoom
     
 		// Define available zoom levels
@@ -128,7 +128,7 @@ export class Zooming {
 		// Force camera to update its internal values
 		(camera as any).preRender()
     
-		this.onUpdate()
+		this.#onUpdate()
 
 	}
 }

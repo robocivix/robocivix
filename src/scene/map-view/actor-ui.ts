@@ -1,5 +1,6 @@
-
 import { Actor } from "../../entity/actor"
+import { Building } from "../../entity/building"
+
 
 export type ActorUI = Actor & {
     _sprite?: Phaser.GameObjects.Sprite
@@ -8,4 +9,8 @@ export type ActorUI = Actor & {
     _direction?: string
     _action?: string
     _pathGraphics?: Phaser.GameObjects.Graphics
+}
+
+export type BuildingUI = Building & {
+    _sprite?: Phaser.GameObjects.Sprite
 }

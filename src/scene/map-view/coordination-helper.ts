@@ -14,14 +14,14 @@ interface ViewBounds {
 }
 
 export class CoordinationHelper {
-	private scene: Scene
+	#scene: Scene
 
 	constructor(scene: Scene) {
-		this.scene = scene
+		this.#scene = scene
 	}
 
 	viewToWorldPosition(viewX: number, viewY: number): Position {
-		const camera = this.scene.cameras.main
+		const camera = this.#scene.cameras.main
 		const worldPoint = camera.getWorldPoint(viewX, viewY)
 		const mapX = Math.max(0, Math.floor(worldPoint.x / TILE_SIZE))
 		const mapY = Math.max(0, Math.floor(worldPoint.y / TILE_SIZE))
@@ -29,7 +29,7 @@ export class CoordinationHelper {
 	}
 
 	getViewWorldPosition(): ViewBounds {
-		const camera = this.scene.cameras.main
+		const camera = this.#scene.cameras.main
 		const viewLeftTop = this.viewToWorldPosition(0, 0)
 		const viewRightBottom = this.viewToWorldPosition(camera.width, camera.height)
 		return {
@@ -41,7 +41,7 @@ export class CoordinationHelper {
 	}
 
 	getMapPosition(viewX: number, viewY: number): Position {
-		const camera = this.scene.cameras.main
+		const camera = this.#scene.cameras.main
 		const worldPoint = camera.getWorldPoint(viewX, viewY)
 		const mapX = Math.max(0, Math.floor(worldPoint.x / TILE_SIZE))
 		const mapY = Math.max(0, Math.floor(worldPoint.y / TILE_SIZE))

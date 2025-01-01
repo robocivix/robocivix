@@ -45,6 +45,15 @@ export default [
 			}],
 
 			"no-undef": ["error"],
+
+            "@typescript-eslint/no-unused-vars": [
+                "error",
+                {
+                    argsIgnorePattern: "^_",
+                    varsIgnorePattern: "^_",
+                    caughtErrorsIgnorePattern: "^_",
+                }
+            ]
 		},
 
 		ignores: [

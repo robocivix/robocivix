@@ -12,11 +12,11 @@ interface MapViewScene extends Phaser.Scene {
 }
 
 export class Avatar {
-	private scene: MapViewScene
+	#scene: MapViewScene
 	readonly movementPath: MovementPath
 
 	constructor(scene: MapViewScene) {
-		this.scene = scene
+		this.#scene = scene
 		this.movementPath = new MovementPath(scene)
 	}
 
@@ -28,7 +28,7 @@ export class Avatar {
 			sprite.x = x
 			sprite.y = y
 		} else {
-			sprite = this.scene.add.sprite(
+			sprite = this.#scene.add.sprite(
 				x,
 				y,
 				actor.name
@@ -38,7 +38,7 @@ export class Avatar {
 				// Only handle left mouse button or touch device tap
 				if ((pointer.leftButtonReleased() || pointer.wasTouch) && pointer.upTime - pointer.downTime < 200) {
 					pointer.event.stopPropagation()
-					this.scene.focus.on(actor)
+					this.#scene.focus.onActor(actor)
 				}
 			})
 			actor._sprite = sprite
@@ -64,7 +64,7 @@ export class Avatar {
 			const targetY = Math.round(nextY * TILE_SIZE + TILE_SIZE/2)
 
 			// Check if there's an existing tween with different target
-			const existingTween = this.scene.tweens.getTweensOf(sprite)[0]
+			const existingTween = this.#scene.tweens.getTweensOf(sprite)[0]
 			if (existingTween) {
 				const d0 = existingTween.data[0] as Phaser.Tweens.TweenData
 				const d1 = existingTween.data[1] as Phaser.Tweens.TweenData
@@ -89,7 +89,7 @@ export class Avatar {
 				const durationInMs = Math.round(length / pixelsPerSecond * 1000)
 
 				// Create a new tween to move the sprite
-				const tween = this.scene.tweens.add({
+				const tween = this.#scene.tweens.add({
 					targets: sprite,
 					x: targetX,
 					y: targetY,
@@ -113,7 +113,7 @@ export class Avatar {
 					}
 				})
 
-				if (this.scene.focus.isOn(actor)) {
+				if (this.#scene.focus.isOn(actor)) {
 					this.movementPath.draw(actor)
 				}
 				actor._tween = tween
@@ -128,7 +128,7 @@ export class Avatar {
 			sprite.play(name, true)
 		}
 
-		if (this.scene.dragSelection && this.scene.dragSelection.isInSelectionArea(actor)) {
+		if (this.#scene.dragSelection && this.#scene.dragSelection.isInSelectionArea(actor)) {
 			sprite.setTint(0x00ff00)
 		} else {
 			sprite.setTint(0xffffff)
@@ -146,8 +146,8 @@ export class Avatar {
 			actor._sprite.destroy()
 			actor._sprite = undefined
 		}
-		if (this.scene.focus.isOn(actor)) {
-			this.scene.focus.remove()
+		if (this.#scene.focus.isOn(actor)) {
+			this.#scene.focus.remove()
 		}
 	}
 }
