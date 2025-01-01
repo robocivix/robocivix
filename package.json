@@ -1,0 +1,31 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@msgpack/msgpack": "^3.0.0-beta2",
+    "@types/pathfinding": "^0.0.9",
+    "mime-types": "^2.1.35",
+    "pathfinding": "^0.4.18",
+    "phaser": "^3.87.0",
+    "rollup": "^4.29.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.2",
+    "@typescript-eslint/eslint-plugin": "^8.19.0",
+    "@typescript-eslint/parser": "^8.19.0",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.2",
+    "vite": "^6.0.6"
+  },
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "npx eslint ./src --fix"
+  }
+}
