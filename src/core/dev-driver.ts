@@ -101,7 +101,7 @@ export function devInit(): void {
 		// createStatic()
 		// createMovingStopped()
 		// createMovingDestroyed()
-		createRandom(10000)
+		createRandom(100)
 		//createRectangle()
 		// //createBackAndForth()
 
@@ -138,39 +138,9 @@ export function randBehavior(actor: Actor): void {
 		const name = "mining"
 		promise = actor.work(name, rand(1000) + 500)
 	} else {
-		let x = actor.x
-		let y = actor.y
-		const n = rand(4) + 1
-		const path: number[] = []
-		for (let i = 0; i < n; i++) {
-			let tx: number
-			let ty: number
-			while (true) {
-				if (randBool()) {
-					if (randBool())
-						tx = x + rand(5) + 1
-					else
-						tx = x - rand(5) - 1
-				} else {
-					tx = x
-				}
-				if (randBool()) {
-					if (randBool())
-						ty = y + rand(5) + 1
-					else
-						ty = y - rand(5) - 1
-				} else {
-					ty = y
-				}
-				if (tx > 0 && ty > 0 && tx < 20 && ty < 20 && (tx !== x || ty !== y))
-					break
-			}
-			path.push(tx)
-			path.push(ty)
-			x = tx
-			y = ty
-		}
-		promise = actor.move(path, 1)
+		let x = rand(30)
+		let y = rand(20)
+		promise = actor.walk(x, y)
 	}
 
 	promise.then(() => setTimeout(() => randBehavior(actor), 0))
