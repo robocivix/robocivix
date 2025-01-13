@@ -26,8 +26,8 @@ export class Res {
 			graphics.fillRect(0, 0, TILE_SIZE, TILE_SIZE)
 			
 			// Border
-			graphics.lineStyle(1, borderColor, 1)
-			graphics.strokeRect(0, 0, TILE_SIZE, TILE_SIZE)
+			// graphics.lineStyle(1, borderColor, 1)
+			// graphics.strokeRect(0, 0, TILE_SIZE, TILE_SIZE)
 
 			const renderTexture = this.#scene.add.renderTexture(0, 0, TILE_SIZE, TILE_SIZE)
 			renderTexture.draw(graphics)
