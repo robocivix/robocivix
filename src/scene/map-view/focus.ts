@@ -31,15 +31,25 @@ export class Focus {
 		})
 
 		this.#scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+			// If we're clicking on the same focused actor, return early
+			if (this.#actor && this.#actor._sprite === pointer.downElement) {
+				return
+			}
 			this.remove()
 		})
 	}
 
 	onActor(actor: ActorUI): void {
+
+		if (this.#building)
+			this.remove()
+
+		if (this.#actor === actor)
+			return
 		this.#actor = actor
 		const sprite = actor._sprite
 
-		if (!sprite) return
+		console.log("Focus on actor", actor)
 
 		// Create a tween that updates each frame to follow the moving sprite
 		const tween = {

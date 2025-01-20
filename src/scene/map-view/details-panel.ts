@@ -40,9 +40,37 @@ export class DetailsPanel {
 		return this.#panel
 	}
 
+	#createGauge(value: number, max: number, color: string): string {
+		const width = 200;  // Total width of gauge
+		const fillWidth = Math.floor((value / max) * width);
+		const percentage = Math.floor((value / max) * 100);
+		
+		return `
+			<div style="
+				width: ${width}px;
+				height: 20px;
+				background: rgba(0, 0, 0, 0.3);
+				margin: 5px 0;
+				position: relative;
+			">
+				<div style="
+					width: ${fillWidth}px;
+					height: 100%;
+					background: ${color};
+					position: absolute;
+				"></div>
+				<div style="
+					position: absolute;
+					width: 100%;
+					text-align: center;
+					line-height: 20px;
+				">${percentage}%</div>
+			</div>
+		`;
+	}
+
 	showActor(actor: Actor): void {
 		const panel = this.#ensurePanel()
-
 		panel.style.display = "block"
 
 		let text = 
@@ -53,6 +81,14 @@ export class DetailsPanel {
 		if (actor.action) {
 			text += `Action: ${actor.action.type}<br>`
 		}
+
+		// Add battery gauge
+		text += `Battery:<br>`
+		text += this.#createGauge(actor.battery.value, actor.battery.max, '#4a9eff')
+
+		// Add lubricant gauge
+		text += `Lubricant:<br>`
+		text += this.#createGauge(actor.lubricant.value, actor.lubricant.max, '#ffaa00')
 			
 		panel.innerHTML = text
 	}

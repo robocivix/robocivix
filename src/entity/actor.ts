@@ -4,6 +4,7 @@ interface MoveStep {
     duration: number
     x: number
     y: number
+	distance: number
 }
 
 interface MoveState {
@@ -25,6 +26,10 @@ interface Action {
     start: number
     end: number
 }
+interface Value {
+	value: number
+	max: number
+}
 
 export class WalkConfig {
 	adjacent: boolean = true
@@ -32,7 +37,6 @@ export class WalkConfig {
 	speed: number = 1
 }
 const DEFAULT_WALK_CONFIG = new WalkConfig()
-
 export interface IActor {
 	id?: string
 	readonly type: string
@@ -41,6 +45,7 @@ export interface IActor {
 	y: number
 	action?: Action
 	_move?: MoveState
+	readonly battery: Value
 
 	work(name: string, duration: number): Promise<Actor>
 	walk(targetX: number, targetY: number, config?: WalkConfig): Promise<Actor>
@@ -51,6 +56,7 @@ export interface IActor {
 
 export class Actor implements IActor {
 	id?: string
+
 	readonly type: string
 	name: string
 	x: number
@@ -60,6 +66,10 @@ export class Actor implements IActor {
 	#onMove: (actor: Actor, toX: number, toY: number) => void
 	_move?: MoveState
 	_future?: Future
+	
+	battery: Value = { value: 100000, max: 100000 }
+	lubricant: Value = { value: 100000, max: 100000 }
+
 
 	constructor(type: string, name: string, x: number, y: number, onUpdate: (actor: Actor) => void, onMove: (actor: Actor, toX: number, toY: number) => void) {
 		this.type = type
@@ -129,13 +139,18 @@ export class Actor implements IActor {
 			function onStepComplete() {
 				if (!actor._move)
 					return
-				const nextX = actor._move.step!.x
-				const nextY = actor._move.step!.y
+				const step = actor._move.step!
+				const nextX = step.x
+				const nextY = step.y
 				actor.#onMove(actor, nextX, nextY)
 				if (actor.x !== nextX || actor.y !== nextY) {
 					throw Error(`Actor moved to (${nextX},${nextY}) but was at (${actor.x},${actor.y}). Something broken, the actor xy is supposed to be updated by the #onMove callback.`)
 				}
 
+				// apply cost
+				actor.battery.value -= (step.distance * 100) | 0
+				actor.lubricant.value -= (step.distance * 10) | 0
+				
 				const newStep = actor.#calculateMoveStep()
 				if (newStep) {
 					actor._move.lastUpdate = new Date().getTime()
@@ -213,7 +228,8 @@ export class Actor implements IActor {
 		return move.step = {
 			duration: (d * 1000 / move.speed) | 0,
 			x: stepX,
-			y: stepY
+			y: stepY,
+			distance: d
 		}
 	}
 }

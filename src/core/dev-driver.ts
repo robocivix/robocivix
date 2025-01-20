@@ -28,7 +28,7 @@ class ActorDefault extends Actor {
 	}
 }
 
-export function createRectangle(): void {
+function createRectangle(): void {
 	const baseX = 13
 	const baseY = 7
 	const w = 5
@@ -40,7 +40,7 @@ export function createRectangle(): void {
 	moveRectangle()
 }
 
-export function createBackAndForth(): void {
+function createBackAndForth(): void {
 	const baseX = 13
 	const baseY = 13
 	const w = 7
@@ -52,7 +52,7 @@ export function createBackAndForth(): void {
 	moveBackAndForth()
 }
 
-export function createRandom(n: number): void {
+function createRandom(n: number): void {
 	for (let i = 0; i < n; i++) {
 		const id = `rand${i}`
 		const x = rand(10) + 5
@@ -62,7 +62,7 @@ export function createRandom(n: number): void {
 	}
 }
 
-export function createStatic(): void {
+function createStatic(): void {
 	const a = new ActorDefault("r1", 5, 5)
 	const b = new ActorDefault("r2", 25, 7)
 	
@@ -70,13 +70,13 @@ export function createStatic(): void {
 	onActorUpdate(b)
 }
 	
-export function createMovingStopped(): void {
+function createMovingStopped(): void {
 	const a = new ActorDefault("move-and-stop", 5, 6)
 	a.move([10, 6])
 	setTimeout(() => a.cancel(), 2000)			
 }
 
-export function createMovingDestroyed(): void {
+function createMovingDestroyed(): void {
 	const a = new ActorDefault("move-and-destroy", 5, 7)
 	a.move([10, 7])
 	setTimeout(() => {
@@ -85,7 +85,7 @@ export function createMovingDestroyed(): void {
 	}, 2000)			
 }
 
-export function createFindPath(): void {
+function createFindPath(): void {
 	const a = new ActorDefault("find-path", 6, 6)	
 	onActorUpdate(a)
 
@@ -96,12 +96,13 @@ export function createFindPath(): void {
 	a.walk(12, 2)
 }
 
+
 export function devInit(): void {
 	setTimeout(() => {
 		// createStatic()
 		// createMovingStopped()
 		// createMovingDestroyed()
-		createRandom(100)
+		//createRandom(100)
 		//createRectangle()
 		// //createBackAndForth()
 

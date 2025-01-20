@@ -86,6 +86,8 @@ export class MapViewScene extends Phaser.Scene {
 			isTouch = true
 			this.debugOverlay?.message("touchstart", `IS_TOUCH: ${isTouch}`)
 		})
+
+		this.createTimePanel()
 	}
 
 	#drawMap(): void {
@@ -167,5 +169,35 @@ export class MapViewScene extends Phaser.Scene {
 	#onActorDelete(actor: Actor): void {
 		const actorUI = actor as ActorUI
 		this.avatar.destroy(actorUI)
+	}
+
+	createTimePanel() {
+		// Create a tinted background (similar to debug overlay)
+		const timePanel = this.add.rectangle(10, 10, 150, 40, 0xffffff)
+			.setOrigin(0, 0)
+			.setAlpha(0.2)         // Translucent white background
+			.setScrollFactor(0)    // Fix to camera
+			.setDepth(1000);       // Ensure it's on top
+
+		// Add text for time display
+		const timeText = this.add.text(20, 20, 'Time: 0', {
+			font: '16px Arial',
+			fill: '#ffffff'
+		})
+			.setScrollFactor(0)
+			.setDepth(1000);
+
+		// Store reference to update later
+		this.timeText = timeText;
+
+		// Update the time display
+		this.time.addEvent({
+			delay: 1000,
+			callback: () => {
+				const currentTime = Math.floor(this.time.now / 1000);
+				this.timeText.setText(`Time: ${currentTime}s`);
+			},
+			loop: true
+		});
 	}
 }

@@ -41,3 +41,5 @@ coverage
 # Vite
 .vite/
 package-lock.json
+lab/
+
