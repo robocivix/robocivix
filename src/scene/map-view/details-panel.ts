@@ -43,12 +43,11 @@ export class DetailsPanel {
 	#createGauge(value: number, max: number, color: string): string {
 		const width = 200;  // Total width of gauge
 		const fillWidth = Math.floor((value / max) * width);
-		const percentage = Math.floor((value / max) * 100);
 		
 		return `
 			<div style="
 				width: ${width}px;
-				height: 20px;
+				height: 3px;
 				background: rgba(0, 0, 0, 0.3);
 				margin: 5px 0;
 				position: relative;
@@ -59,12 +58,6 @@ export class DetailsPanel {
 					background: ${color};
 					position: absolute;
 				"></div>
-				<div style="
-					position: absolute;
-					width: 100%;
-					text-align: center;
-					line-height: 20px;
-				">${percentage}%</div>
 			</div>
 		`;
 	}
@@ -86,9 +79,9 @@ export class DetailsPanel {
 		text += `Battery:<br>`
 		text += this.#createGauge(actor.battery.value, actor.battery.max, '#4a9eff')
 
-		// Add lubricant gauge
-		text += `Lubricant:<br>`
-		text += this.#createGauge(actor.lubricant.value, actor.lubricant.max, '#ffaa00')
+		// Add maintenance gauge
+		text += `Maintenance:<br>`
+		text += this.#createGauge(actor.maintenance.value, actor.maintenance.max, '#ffaa00')
 			
 		panel.innerHTML = text
 	}

@@ -62,7 +62,6 @@ export class MapViewScene extends Phaser.Scene {
 	}
 
 	create(): void {
-		this.avatar.create()
 		this.res.createAnimations()
 		this.#disableContextMenu()
 		

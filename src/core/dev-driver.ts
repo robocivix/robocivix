@@ -96,6 +96,17 @@ function createFindPath(): void {
 	a.walk(12, 2)
 }
 
+function createFindPath2(): void {
+	const a = new ActorDefault("find-path2", 9, 9)	
+	onActorUpdate(a)
+
+	// const path = world.map.pathfinder.findPathToAdjacent(a.x, a.y, 12, 2)
+	// if (path) {
+	// 	a.move(path)
+	// }
+	a.walk(15, 15)
+}
+
 
 export function devInit(): void {
 	setTimeout(() => {
@@ -106,7 +117,8 @@ export function devInit(): void {
 		//createRectangle()
 		// //createBackAndForth()
 
-		createFindPath()
+		//createFindPath()
+		createFindPath2()
 		
 		// a.move([10, 5, 12, 7])
 		// 	.then(() => console.log("move complete"))

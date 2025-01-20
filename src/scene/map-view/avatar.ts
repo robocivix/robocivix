@@ -5,6 +5,7 @@ import { Actor } from "../../entity/actor"
 import { Focus } from "./focus"
 import { ActorUI } from "./actor-ui"
 import { DragSelection } from "./drag-selection"
+import { world } from "../../core/world"
 
 interface MapViewScene extends Phaser.Scene {
   focus: Focus
@@ -20,13 +21,23 @@ export class Avatar {
 		this.movementPath = new MovementPath(scene)
 	}
 
+	create(actor: ActorUI): void {
+		this.#scene.events.on('update', this.#update, this)
+	}
+
+	#update(): void {
+	}
+
 	draw(actor: ActorUI): void {
 		let sprite = actor._sprite
 		const x = Math.round(actor.x * TILE_SIZE + TILE_SIZE / 2)
 		const y = Math.round(actor.y * TILE_SIZE + TILE_SIZE / 2)
+
 		if (sprite) {
-			sprite.x = x
-			sprite.y = y
+			//if (!actor._move) {
+				sprite.x = x
+				sprite.y = y
+			//}
 		} else {
 			sprite = this.#scene.add.sprite(
 				x,
@@ -68,14 +79,14 @@ export class Avatar {
 			if (existingTween) {
 				const d0 = existingTween.data[0] as Phaser.Tweens.TweenData
 				const d1 = existingTween.data[1] as Phaser.Tweens.TweenData
-				if (d0.end !== targetX || d1.end !== targetY) {
-					// If target changed, kill existing tween
-					existingTween.stop()
-					existingTween.remove()
-				} else {
+				if (d0.end === targetX && d1.end === targetY) {
 					// If target is the same, keep existing tween
 					return
 				}
+				// Target changed, kill existing tween
+				existingTween.stop()
+				existingTween.remove()
+				//console.log("recreate tween", d0.end, d1.end, targetX, targetY)
 			}
 
 			// Calculate distance to target
@@ -149,5 +160,52 @@ export class Avatar {
 		if (this.#scene.focus.isOn(actor)) {
 			this.#scene.focus.remove()
 		}
+	}
+
+	private updateSpritePosition(sprite: Phaser.GameObjects.Sprite, actor: ActorUI): void {
+		if (!actor._move) return
+
+		const [nextX, nextY] = actor._move.path
+		
+		// Calculate target position in pixels
+		const targetX = Math.round(nextX * TILE_SIZE + TILE_SIZE/2)
+		const targetY = Math.round(nextY * TILE_SIZE + TILE_SIZE/2)
+
+		// Calculate current position
+		const now = performance.now()
+		const elapsed = now - (actor._move.lastUpdate || now)
+		
+		// Speed is in tiles per second, convert to pixels per second
+		// Normalize speed to be between 0 and 1 for visualization
+		const baseSpeed = 2 // Base speed in tiles per second
+		const normalizedSpeed = actor._move.speed / baseSpeed
+		const pixelsPerSecond = normalizedSpeed * TILE_SIZE * 4 // Adjust multiplier for desired speed
+		
+		// Calculate distance to target
+		const dx = targetX - sprite.x
+		const dy = targetY - sprite.y
+		const distance = Math.sqrt(dx * dx + dy * dy)
+		
+		// For speed visualization/debugging
+		const currentSpeed = (pixelsPerSecond * elapsed) / 1000
+		console.log('Speed:', normalizedSpeed.toFixed(2), 'Distance:', distance.toFixed(2), 'Current Speed:', currentSpeed.toFixed(2))
+		
+		if (distance < 1) {
+			// If very close to target, snap to it
+			sprite.x = targetX
+			sprite.y = targetY
+			return
+		}
+
+		// Calculate movement this frame
+		const moveDistance = (pixelsPerSecond * elapsed) / 1000
+		const ratio = Math.min(moveDistance / distance, 1)
+
+		// Update position
+		sprite.x += dx * ratio
+		sprite.y += dy * ratio
+		
+		// Update last update time
+		actor._move.lastUpdate = now
 	}
 }

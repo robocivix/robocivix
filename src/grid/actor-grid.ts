@@ -32,7 +32,7 @@ export class ActorGrid implements IActorGrid {
 	}
 
 	add(actor: Actor): void {
-		const id = `a-${this.#counter++}`
+		const id = `a${this.#counter++}`
 		if (actor.id) {
 			throw new Error(`Actor already has an id: ${actor.id}`)
 		}

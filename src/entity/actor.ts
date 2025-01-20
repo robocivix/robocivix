@@ -68,7 +68,7 @@ export class Actor implements IActor {
 	_future?: Future
 	
 	battery: Value = { value: 100000, max: 100000 }
-	lubricant: Value = { value: 100000, max: 100000 }
+	maintenance: Value = { value: 100000, max: 100000 }
 
 
 	constructor(type: string, name: string, x: number, y: number, onUpdate: (actor: Actor) => void, onMove: (actor: Actor, toX: number, toY: number) => void) {
@@ -149,7 +149,7 @@ export class Actor implements IActor {
 
 				// apply cost
 				actor.battery.value -= (step.distance * 100) | 0
-				actor.lubricant.value -= (step.distance * 10) | 0
+				actor.maintenance.value -= (step.distance * 10) | 0
 				
 				const newStep = actor.#calculateMoveStep()
 				if (newStep) {

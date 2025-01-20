@@ -49,7 +49,7 @@ export class BuildingGrid implements IBuildingGrid {
 			throw new Error(`building already exists at ${building.x}, ${building.y}`)
 		}
 
-		const id = `b-${this.#counter++}`
+		const id = `b${this.#counter++}`
 		building.id = id
 
 		for (let x = 0; x < building.prototype.width; x++) {
